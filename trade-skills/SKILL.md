@@ -1,6 +1,6 @@
 ---
 name: trade-skills
-description: Data source router for accessing Chinese financial market data. Routes users to appropriate data skill (akshare-data for stocks/bonds/funds/macro, tianqing-data for futures). Provides comprehensive data resource table showing what data each skill provides and which APIs to call.
+description: Data source router for accessing Chinese financial market data. Routes users to appropriate data skill (akshare-data for stocks/bonds/funds/macro, tianqin-data for futures). Provides comprehensive data resource table showing what data each skill provides and which APIs to call.
 ---
 
 # Trade Skills - Data Source Router
@@ -50,9 +50,9 @@ AKShare provides comprehensive Chinese financial market data.
 
 ---
 
-### Data Source 2: tianqing-data
+### Data Source 2: tianqin-data
 
-Tianqing (天晴) provides China futures real-time and historical data via EasyFut API.
+Tianqin (天勤) provides China futures real-time and historical data via EasyFut API.
 
 | Data Type | Data Category | APIs | Use Case |
 |---|---|---|---|
@@ -72,7 +72,7 @@ Tianqing (天晴) provides China futures real-time and historical data via EasyF
 - **CFFEX** (China Financial Futures): CSI 300 (IF), CSI 500 (IC), Shanghai 50 (IH)
 - **DCE** (Dalian): Soybeans (a), Soybean Meal (m), Soybean Oil (y), Plastics (l)
 
-**Skill Reference:** [tianqing-data](../tianqing-data/SKILL.md)
+**Skill Reference:** [tianqin-data](../tianqin-data/SKILL.md)
 
 ---
 
@@ -86,11 +86,11 @@ Tianqing (天晴) provides China futures real-time and historical data via EasyF
 
 **Need macroeconomic indicators (GDP, CPI, etc.)?** → Use `akshare-data` - macro_china_* APIs
 
-**Need China futures real-time quotes?** → Use `tianqing-data` - quote command
+**Need China futures real-time quotes?** → Use `tianqin-data` - quote command
 
-**Need China futures K-lines for technical analysis?** → Use `tianqing-data` - klines command with --duration parameter
+**Need China futures K-lines for technical analysis?** → Use `tianqin-data` - klines command with --duration parameter
 
-**Need China futures tick-level data?** → Use `tianqing-data` - ticks command
+**Need China futures tick-level data?** → Use `tianqin-data` - ticks command
 
 ---
 

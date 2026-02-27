@@ -1,13 +1,13 @@
 ---
-name: tianqing-data
+name: tianqin-data
 description: CLI wrapper and API reference for China futures market data from EasyFut API. Use this skill to access real-time quotes, K-line candlestick data, and tick sequences for China futures contracts across major exchanges (SHFE, DCE, CFFEX, CZCE, INE). All commands require exchange prefix format (e.g., SHFE.rb2601, CFFEX.IF2601).
 ---
 
-# TianQing Data - China Futures Market API
+# TianQin Data - China Futures Market API
 
 ## Overview
 
-TianQing Data provides command-line access to China futures market data through the EasyFut API. Fetch real-time quotes, historical K-line data, and granular tick sequences for futures contracts traded on Chinese exchanges including SHFE (Shanghai Futures Exchange), DCE (Dalian Commodity Exchange), CFFEX (China Financial Futures Exchange), CZCE (Zhengzhou Commodity Exchange), and INE (Shanghai International Energy Exchange).
+tianqin Data provides command-line access to China futures market data through the EasyFut API. Fetch real-time quotes, historical K-line data, and granular tick sequences for futures contracts traded on Chinese exchanges including SHFE (Shanghai Futures Exchange), DCE (Dalian Commodity Exchange), CFFEX (China Financial Futures Exchange), CZCE (Zhengzhou Commodity Exchange), and INE (Shanghai International Energy Exchange).
 
 ## Quick Start
 
@@ -33,7 +33,7 @@ python3 scripts/tq_cli.py ticks DCE.a2601 --length 100
 chmod +x scripts/tq_cli.py
 
 # Optionally, create an alias for convenience
-alias tq='python3 /path/to/tianqing-data/scripts/tq_cli.py'
+alias tq='python3 /path/to/tianqin-data/scripts/tq_cli.py'
 ```
 
 ## Core Capabilities
