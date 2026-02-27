@@ -204,9 +204,113 @@ All futures symbols require exchange prefix:
 - Futures tick data
 - Only for Chinese futures contracts on SHFE, DCE, CFFEX, CZCE, INE exchanges
 
+## Documentation & Test Reports Organization
+
+### Directory Structure
+
+All project documentation and test reports are organized in the `docs/` directory:
+
+```
+docs/
+├── plans/           # Implementation plans and architectural decisions
+│                   # Example: implementation-plan-akshare-api-expansion.md
+│
+└── reports/         # Test execution reports with semantic naming
+                    # Example: test-execution-trade-skills-routing-2026-02-27.md
+```
+
+### Naming Convention for Test Reports
+
+Test reports in `docs/reports/` must follow semantic naming pattern:
+
+**Format:** `test-<test-scope>-<description>-YYYY-MM-DD.md`
+
+**Examples:**
+- `test-execution-trade-skills-routing-2026-02-27.md` - Test execution for trade-skills routing functionality
+- `test-execution-akshare-stock-cli-2026-02-27.md` - Test execution for akshare stock CLI
+- `test-integration-all-skills-2026-02-27.md` - Integration test of all three skills
+- `test-futures-tianqin-klines-5m-2026-02-27.md` - Test of 5-minute K-line functionality
+
+**Components:**
+- `test-` prefix: identifies as test report
+- `<test-scope>`: what was tested (e.g., `execution`, `integration`, `unit`)
+- `<description>`: semantic description of what was tested (must be meaningful)
+- `YYYY-MM-DD`: execution date
+
+### Report Content
+
+Each test report should include:
+
+1. **Test Metadata** - Date, executor, test scope
+2. **Environment Verification** - Skills/dependencies checked
+3. **Test Execution** - Each test case with input, expected, actual results
+4. **Verification Summary** - Pass/fail status for each test
+5. **Conclusion** - Overall test results and recommendations
+
+## Critical Lessons: Testing Skills Properly
+
+### Mistake: Assuming Symlinks = Installed Skills (2026-02-27)
+
+**What happened:**
+
+When testing trade-skills, I made a critical error:
+
+1. ❌ Saw symlinks in `~/.claude/skills/` and assumed skills were properly installed
+2. ❌ Did NOT verify that symlink targets actually exist
+3. ❌ Skipped the installation step required by TEST.md
+4. ❌ Directly tested underlying CLI commands (`akshare_cli.py`, `tq_cli.py`)
+5. ❌ Never actually tested the **trade-skills routing functionality** itself
+
+**The actual situation:**
+```bash
+# Symlink existed but pointed to non-existent directory
+~/.claude/skills/trade-skills -> /Users/ppsteven/projects/skills/.agents/skills/trade-skills
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+                                                                   THIS DIDN'T EXIST!
+```
+
+**Why this was wrong:**
+
+- TEST.md explicitly requires: `npx skills add <source>`
+- The purpose was to test **trade-skills routing decisions**, not just verify CLI tools work
+- A broken symlink doesn't mean the skill is loaded or functional
+- Skills need to be properly installed in `~/.agents/skills/` to be available to agents
+
+**The correct approach:**
+
+```bash
+# 1. Verify installation - don't just check symlinks, verify target directories exist
+ls -la ~/.agents/skills/trade-skills/SKILL.md  # Must exist!
+
+# 2. If missing, follow TEST.md installation procedure
+npx skills add https://github.com/PPsteven/skills --yes --global
+
+# 3. Then verify again
+test -f ~/.agents/skills/trade-skills/SKILL.md && echo "OK" || echo "FAILED"
+```
+
+**Testing hierarchy:**
+
+```
+❌ Wrong: Test CLI directly → Proves nothing about skill routing
+         python3 akshare-data/scripts/akshare_cli.py ...
+
+✅ Right: Verify skill installed → Test skill behavior → Then test underlying CLI if needed
+         ls ~/.agents/skills/trade-skills/
+         [Test routing decisions]
+         python3 akshare-data/scripts/akshare_cli.py ...
+```
+
+**Key takeaway:**
+
+Always follow the test procedure in TEST.md files exactly. Don't skip installation steps. Symlink existence ≠ functional skill installation.
+
+---
+
 ## References
 
 - **akshare-data**: See `akshare-data/SKILL.md` for complete API reference
 - **tianqin-data**: See `tianqin-data/SKILL.md` for EasyFut API documentation
 - **trade-skills**: See `trade-skills/SKILL.md` for routing rules and `trade-skills/TEST.md` for test cases
 - **Main README**: `README.md` for project overview
+- **Documentation**: See `docs/` for implementation plans and test reports
