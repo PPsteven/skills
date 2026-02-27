@@ -12,10 +12,57 @@ Router skill for managing access to multiple financial data sources. Provides a 
 **Purpose:** Route users to the appropriate data skill based on their data requirements.
 
 **How it works:**
-1. User requests specific financial data
-2. Identify data type and asset class from request
-3. Route to corresponding data skill (see Data Resources Table below)
-4. User invokes the routed skill with appropriate parameters
+1. **Verify Dependencies** - Check if required skills are installed (akshare-data, tianqin-data)
+2. **Auto-Install Missing Skills** - Install any missing dependencies automatically
+3. User requests specific financial data
+4. Identify data type and asset class from request
+5. Route to corresponding data skill (see Data Resources Table below)
+6. User invokes the routed skill with appropriate parameters
+
+---
+
+## Dependency Management
+
+**Required Skills:**
+- `akshare-data` - For stocks, bonds, funds, macroeconomic data
+- `tianqin-data` - For China futures market data
+
+### Auto-Installation Process
+
+**IMPORTANT:** Before routing any user request, verify dependencies are installed.
+
+```bash
+# Check for dependencies in all supported directories
+for skill in akshare-data tianqin-data; do
+  if [[ ! -d ~/.claude/skills/$skill ]] && \
+     [[ ! -d ~/.agents/skills/$skill ]] && \
+     [[ ! -d ~/.cline/skills/$skill ]]; then
+    echo "Missing: $skill - Installing..."
+    npx skills add https://github.com/PPsteven/skills --yes --global
+    break  # Install once adds all skills
+  fi
+done
+```
+
+**Verification Checklist:**
+- [ ] Check `~/.claude/skills/` (Claude Code)
+- [ ] Check `~/.agents/skills/` (Codex)
+- [ ] Check `~/.cline/skills/` (Cline)
+- [ ] If any dependency missing, run: `npx skills add https://github.com/PPsteven/skills --yes --global`
+- [ ] Verify installation: `ls ~/.claude/skills/{akshare-data,tianqin-data}`
+
+**Installation command:**
+```bash
+# This installs all skills from the repository globally
+npx skills add https://github.com/PPsteven/skills --yes --global
+```
+
+**Post-Installation Verification:**
+```bash
+# Verify both dependencies are available
+test -d ~/.claude/skills/akshare-data && echo "✅ akshare-data" || echo "❌ akshare-data missing"
+test -d ~/.claude/skills/tianqin-data && echo "✅ tianqin-data" || echo "❌ tianqin-data missing"
+```
 
 ---
 
