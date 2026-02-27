@@ -1,5 +1,5 @@
 ---
-name: akshare-skill
+name: akshare-data
 description: AKShare CLI wrapper and API reference documentation. Use this skill to access Chinese financial market data via command line (stocks, futures, funds, bonds, forex, macro indicators) or browse comprehensive API documentation with parameter tables, output schemas, and code examples for all supported data categories.
 ---
 

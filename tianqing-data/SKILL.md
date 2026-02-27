@@ -1,5 +1,5 @@
 ---
-name: tq-skill
+name: tianqing-data
 description: CLI wrapper and API reference for China futures data retrieval from EasyFut API. Use when fetching real-time quotes, K-line candlestick data, or tick sequences for China futures contracts (IF, IC, IH, and other CFFEX/DCE/SHFE symbols). Supports advanced filtering by date range and intervals, with authentication via API key.
 ---
 
