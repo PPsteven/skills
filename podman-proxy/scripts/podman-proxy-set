@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# podman-proxy-set - Quickly change SOCKS5 proxy port for Podman on macOS
+# Usage:
+#   podman-proxy-set 1088          # Set to port 1088
+#   podman-proxy-set               # Use $PROXY_PORT environment variable
+#   PROXY_PORT=8080 podman-proxy-set
+
+set -e
+
+PORT=${1:-${PROXY_PORT:-1088}}
+
+# Validate port number
+if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    echo "Error: Invalid port number: $PORT"
+    echo "Usage: $0 <port> or PROXY_PORT=<port> $0"
+    exit 1
+fi
+
+echo "Setting Podman proxy to port: $PORT"
+
+# Configure proxy inside Podman VM
+podman machine ssh "mkdir -p ~/.config/containers && cat > ~/.config/containers/containers.conf << 'EOFCONF'
+[engine]
+http_proxy = \"socks5h://host.containers.internal:${PORT}\"
+https_proxy = \"socks5h://host.containers.internal:${PORT}\"
+EOFCONF
+echo 'Proxy configured. Restarting podman daemon...'
+sudo systemctl restart podman
+" || {
+    echo "Error: Failed to configure proxy. Make sure Podman Machine is running."
+    exit 1
+}
+
+echo "✓ Proxy is now set to localhost:$PORT"

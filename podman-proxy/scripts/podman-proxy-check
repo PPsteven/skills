@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# podman-proxy-check - View current Podman proxy configuration
+# Usage: podman-proxy-check
+
+set -e
+
+echo "=== Current Podman Proxy Configuration ==="
+echo ""
+
+podman machine ssh "cat ~/.config/containers/containers.conf 2>/dev/null" || {
+    echo "Error: Could not read proxy configuration."
+    echo "Make sure Podman Machine is running and proxy has been configured with podman-proxy-set."
+    exit 1
+}
+
+echo ""
+echo "To change proxy port, use: podman-proxy-set <port>"
