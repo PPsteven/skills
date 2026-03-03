@@ -27,10 +27,28 @@ class TradingHoursChecker:
             )
 
         parts = symbol.split('.')
-        exchange = parts[0].upper()
-        variety_with_month = parts[1]
+        if len(parts) != 2:
+            raise ValueError(
+                f"Invalid symbol format: {symbol}. "
+                f"Expected exactly one dot."
+            )
+
+        exchange = parts[0].upper().strip()
+        variety_with_month = parts[1].strip()
+
+        if not exchange or not variety_with_month:
+            raise ValueError(
+                f"Invalid symbol format: {symbol}. "
+                f"Exchange and variety cannot be empty."
+            )
 
         # Extract variety code (remove month digits)
         variety = ''.join(c for c in variety_with_month if not c.isdigit())
+
+        if not variety:
+            raise ValueError(
+                f"Invalid symbol format: {symbol}. "
+                f"Variety code cannot be all digits."
+            )
 
         return exchange, variety

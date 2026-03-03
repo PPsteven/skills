@@ -34,6 +34,30 @@ class TestSymbolParsing(unittest.TestCase):
             checker.parse_symbol("rb2601")
         self.assertIn("Invalid symbol format", str(context.exception))
 
+    def test_parse_symbol_empty_exchange(self):
+        """Test error on empty exchange"""
+        checker = TradingHoursChecker(None)
+        with self.assertRaises(ValueError):
+            checker.parse_symbol(".rb2601")
+
+    def test_parse_symbol_empty_variety(self):
+        """Test error on empty variety"""
+        checker = TradingHoursChecker(None)
+        with self.assertRaises(ValueError):
+            checker.parse_symbol("SHFE.")
+
+    def test_parse_symbol_multiple_dots(self):
+        """Test error on multiple dots"""
+        checker = TradingHoursChecker(None)
+        with self.assertRaises(ValueError):
+            checker.parse_symbol("SHFE.rb.2601")
+
+    def test_parse_symbol_all_digits(self):
+        """Test error on all-digit variety"""
+        checker = TradingHoursChecker(None)
+        with self.assertRaises(ValueError):
+            checker.parse_symbol("SHFE.2601")
+
 
 if __name__ == "__main__":
     unittest.main()
