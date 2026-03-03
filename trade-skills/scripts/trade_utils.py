@@ -217,6 +217,128 @@ class DominantContractManager:
 
         return codes
 
+    def get_contract_open_interest(self, exchange: str, contract: str) -> Optional[int]:
+        """
+        Query open interest for a contract using tianqin-data
+        Returns: open_interest value or None if failed
+        """
+        import sys
+        symbol = f"{exchange}.{contract}"
+
+        # Find tq_cli.py path
+        tq_cli_path = SCRIPT_DIR.parent.parent / "tianqin-data" / "scripts" / "tq_cli.py"
+
+        if not tq_cli_path.exists():
+            print(f"Warning: tianqin-data not found at {tq_cli_path}", file=sys.stderr)
+            return None
+
+        try:
+            result = subprocess.run(
+                ["python3", str(tq_cli_path), "quote", symbol],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                env=os.environ.copy()
+            )
+
+            if result.returncode != 0:
+                return None
+
+            # Parse JSON response
+            data = json.loads(result.stdout)
+
+            # Extract open interest (try multiple field names)
+            open_interest = data.get("open_interest") or data.get("持仓量") or data.get("open_interest_lot")
+
+            if open_interest:
+                return int(open_interest)
+
+            return None
+
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, Exception) as e:
+            print(f"Warning: Failed to get open interest for {symbol}: {e}", file=sys.stderr)
+            return None
+
+    def update_variety(self, variety: str, exchange: str) -> bool:
+        """
+        Update dominant contract for a single variety
+        Returns: True if successful, False otherwise
+        """
+        import sys
+        contracts = self.generate_contract_codes(variety, exchange)
+
+        max_oi = 0
+        dominant_contract = None
+
+        print(f"  Checking {len(contracts)} contracts for {variety}...", file=sys.stderr)
+
+        for contract in contracts:
+            oi = self.get_contract_open_interest(exchange, contract)
+            if oi and oi > max_oi:
+                max_oi = oi
+                dominant_contract = contract
+
+        if dominant_contract:
+            self.config[variety.lower()] = {
+                "dominant": dominant_contract,
+                "exchange": exchange,
+                "updated_at": datetime.now().isoformat()
+            }
+            print(f"  ✓ {variety}: {dominant_contract} (OI: {max_oi})", file=sys.stderr)
+            return True
+        else:
+            print(f"  ✗ {variety}: No data found", file=sys.stderr)
+            return False
+
+    def update_dominant(self, varieties: Optional[List[str]] = None) -> Dict:
+        """
+        Update dominant contracts for specified varieties or all
+        Returns: {"updated": int, "failed": int, "timestamp": str}
+        """
+        import sys
+        # Default varieties to update (common contracts)
+        default_varieties = [
+            ("rb", "SHFE"), ("cu", "SHFE"), ("al", "SHFE"), ("au", "SHFE"),
+            ("ag", "SHFE"), ("ru", "SHFE"), ("bu", "SHFE"), ("hc", "SHFE"),
+            ("a", "DCE"), ("m", "DCE"), ("y", "DCE"), ("p", "DCE"),
+            ("i", "DCE"), ("j", "DCE"), ("jm", "DCE"), ("l", "DCE"),
+            ("v", "DCE"), ("pp", "DCE"), ("eg", "DCE"),
+            ("CF", "CZCE"), ("SR", "CZCE"), ("TA", "CZCE"), ("MA", "CZCE"),
+            ("RM", "CZCE"), ("OI", "CZCE"), ("FG", "CZCE"), ("ZC", "CZCE"),
+            ("IF", "CFFEX"), ("IC", "CFFEX"), ("IH", "CFFEX"),
+            ("sc", "INE"), ("lu", "INE"), ("nr", "INE")
+        ]
+
+        if varieties:
+            # Filter to specified varieties
+            varieties_set = set(v.lower() for v in varieties)
+            update_list = [(v, e) for v, e in default_varieties if v.lower() in varieties_set]
+        else:
+            update_list = default_varieties
+
+        print(f"Updating {len(update_list)} varieties...", file=sys.stderr)
+
+        updated = 0
+        failed = 0
+
+        for variety, exchange in update_list:
+            print(f"\n[{updated + failed + 1}/{len(update_list)}] {variety} ({exchange})", file=sys.stderr)
+            if self.update_variety(variety, exchange):
+                updated += 1
+            else:
+                failed += 1
+
+        # Save updated config
+        self.save_config()
+
+        print(f"\n✅ Update complete: {updated} succeeded, {failed} failed", file=sys.stderr)
+
+        return {
+            "updated": updated,
+            "failed": failed,
+            "timestamp": datetime.now().isoformat()
+        }
+
 
 # Constants for file paths
 SCRIPT_DIR = Path(__file__).parent
@@ -283,8 +405,10 @@ def main():
             print(json.dumps(result, indent=2, ensure_ascii=False))
 
         elif args.command == "update-dominant":
-            print("Error: update-dominant not yet implemented", file=sys.stderr)
-            sys.exit(1)
+            varieties = args.varieties.split(',') if args.varieties else None
+            manager = DominantContractManager(DOMINANT_CONTRACTS_FILE)
+            result = manager.update_dominant(varieties)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
 
     except Exception as e:
         print(json.dumps({"error": str(e)}, indent=2, ensure_ascii=False), file=sys.stderr)
