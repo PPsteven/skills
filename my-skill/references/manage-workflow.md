@@ -116,6 +116,7 @@ You're about to remove skill: <skill-name>
 This will:
 - Remove symlink at ~/.claude/skills/<skill-name>
 - Remove symlink at ~/.cline/skills/<skill-name>
+- Remove symlink at ~/.openclaw/workspace/skills/<skill-name>
 
 Do you also want to delete the source directory?
 Source: <path>
@@ -140,6 +141,14 @@ if [ -L ~/.cline/skills/<skill-name> ]; then
 else
   echo "⚠️ Cline symlink not found"
 fi
+
+# Remove OpenClaw symlink
+if [ -L ~/.openclaw/workspace/skills/<skill-name> ]; then
+  rm ~/.openclaw/workspace/skills/<skill-name>
+  echo "✅ Removed OpenClaw symlink"
+else
+  echo "⚠️ OpenClaw symlink not found"
+fi
 ```
 
 **Step 3: Remove source directory (if user confirmed)**
@@ -158,6 +167,7 @@ fi
 # Verify symlinks are gone
 test ! -e ~/.claude/skills/<skill-name> && echo "✅ Claude Code symlink removed" || echo "❌ Failed to remove Claude Code symlink"
 test ! -e ~/.cline/skills/<skill-name> && echo "✅ Cline symlink removed" || echo "❌ Failed to remove Cline symlink"
+test ! -e ~/.openclaw/workspace/skills/<skill-name> && echo "✅ OpenClaw symlink removed" || echo "❌ Failed to remove OpenClaw symlink"
 
 # Verify source directory (if deleted)
 if [[ $DELETE_SOURCE == true ]]; then
@@ -171,6 +181,7 @@ Removing skill: obsolete-skill
 
 ✅ Removed Claude Code symlink
 ✅ Removed Cline symlink
+✅ Removed OpenClaw symlink
 ✅ Removed source directory: /Users/ppsteven/projects/skills/obsolete-skill
 
 Verification:
@@ -272,17 +283,33 @@ for skill_link in ~/.claude/skills/*; do
 
     # Check 5: Cline symlink exists
     if [ ! -L ~/.cline/skills/"$SKILL_NAME" ]; then
-      echo "  ⚠️ Cline symlink missing (skill only available in Claude Code)"
+      echo "  ⚠️  Cline symlink missing (skill only available in Claude Code)"
       # This is a warning, not a failure
     else
       # Verify Cline symlink points to same source
       CLINE_SOURCE=$(readlink ~/.cline/skills/"$SKILL_NAME")
       if [ "$CLINE_SOURCE" != "$SOURCE_PATH" ]; then
-        echo "  ⚠️ Cline symlink points to different source"
+        echo "  ⚠️  Cline symlink points to different source"
         echo "     Expected: $SOURCE_PATH"
         echo "     Actual: $CLINE_SOURCE"
       else
         echo "  ✅ Cline symlink valid"
+      fi
+    fi
+
+    # Check 6: OpenClaw symlink exists
+    if [ ! -L ~/.openclaw/workspace/skills/"$SKILL_NAME" ]; then
+      echo "  ⚠️  OpenClaw symlink missing (skill not available in OpenClaw)"
+      # This is a warning, not a failure
+    else
+      # Verify OpenClaw symlink points to same source
+      OPENCLAW_SOURCE=$(readlink ~/.openclaw/workspace/skills/"$SKILL_NAME")
+      if [ "$OPENCLAW_SOURCE" != "$SOURCE_PATH" ]; then
+        echo "  ⚠️  OpenClaw symlink points to different source"
+        echo "     Expected: $SOURCE_PATH"
+        echo "     Actual: $OPENCLAW_SOURCE"
+      else
+        echo "  ✅ OpenClaw symlink valid"
       fi
     fi
 
@@ -312,6 +339,7 @@ if [ $ISSUES -gt 0 ]; then
   echo "- For missing SKILL.md: Verify skill installation or reinstall"
   echo "- For invalid frontmatter: Edit SKILL.md to add required fields"
   echo "- For missing Cline symlinks: Create with 'ln -s <source> ~/.cline/skills/<name>'"
+  echo "- For missing OpenClaw symlinks: Create with 'ln -s <source> ~/.openclaw/workspace/skills/<name>'"
 fi
 ```
 
@@ -418,6 +446,20 @@ ln -s "$SOURCE" ~/.cline/skills/<skill-name>
 
 # Verify
 ls -l ~/.cline/skills/<skill-name>
+```
+
+### OpenClaw Symlink Missing
+**Problem**: Skill works in Claude Code/Cline but not in OpenClaw
+**Solution**:
+```bash
+# Find source path
+SOURCE=$(readlink ~/.claude/skills/<skill-name>)
+
+# Create OpenClaw symlink
+ln -s "$SOURCE" ~/.openclaw/workspace/skills/<skill-name>
+
+# Verify
+ls -l ~/.openclaw/workspace/skills/<skill-name>
 ```
 
 ---

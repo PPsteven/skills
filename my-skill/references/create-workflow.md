@@ -71,7 +71,7 @@ All skills must be created in the centralized repository:
 
 ## Symlink Setup After Creation
 
-After creating a skill in `/Users/ppsteven/projects/skills/<skill-name>`, create symlinks to make it available to both Claude Code and Cline:
+After creating a skill in `/Users/ppsteven/projects/skills/<skill-name>`, create symlinks to make it available to Claude Code, Cline, and OpenClaw:
 
 ### Link to Claude Code
 
@@ -85,9 +85,15 @@ ln -s /Users/ppsteven/projects/skills/<skill-name> ~/.claude/skills/<skill-name>
 ln -s /Users/ppsteven/projects/skills/<skill-name> ~/.cline/skills/<skill-name>
 ```
 
+### Link to OpenClaw
+
+```bash
+ln -s /Users/ppsteven/projects/skills/<skill-name> ~/.openclaw/workspace/skills/<skill-name>
+```
+
 ### Verification
 
-Verify both symlinks were created correctly:
+Verify all three symlinks were created correctly:
 
 ```bash
 # Check Claude Code symlink
@@ -96,12 +102,16 @@ ls -l ~/.claude/skills/<skill-name>
 # Check Cline symlink
 ls -l ~/.cline/skills/<skill-name>
 
+# Check OpenClaw symlink
+ls -l ~/.openclaw/workspace/skills/<skill-name>
+
 # Verify symlinks point to the correct source
 readlink ~/.claude/skills/<skill-name>
 readlink ~/.cline/skills/<skill-name>
+readlink ~/.openclaw/workspace/skills/<skill-name>
 ```
 
-Both should output `/Users/ppsteven/projects/skills/<skill-name>`.
+All three should output `/Users/ppsteven/projects/skills/<skill-name>`.
 
 ## Complete Workflow Example
 
@@ -143,6 +153,9 @@ ln -s /Users/ppsteven/projects/skills/python-dependency-manager \
 
 ln -s /Users/ppsteven/projects/skills/python-dependency-manager \
       ~/.cline/skills/python-dependency-manager
+
+ln -s /Users/ppsteven/projects/skills/python-dependency-manager \
+      ~/.openclaw/workspace/skills/python-dependency-manager
 ```
 
 **Step 6: Verify deployment**
@@ -150,9 +163,11 @@ ln -s /Users/ppsteven/projects/skills/python-dependency-manager \
 # Verify symlink targets exist
 test -f ~/.claude/skills/python-dependency-manager/SKILL.md && echo "Claude Code OK" || echo "FAILED"
 test -f ~/.cline/skills/python-dependency-manager/SKILL.md && echo "Cline OK" || echo "FAILED"
+test -f ~/.openclaw/workspace/skills/python-dependency-manager/SKILL.md && echo "OpenClaw OK" || echo "FAILED"
 
 # Verify skill is discoverable
 ls -l ~/.claude/skills/ | grep python-dependency-manager
+ls -l ~/.openclaw/workspace/skills/ | grep python-dependency-manager
 ```
 
 **Step 7: Test the skill**
@@ -183,7 +198,7 @@ If user declines, keep the skill local without pushing to remote.
 - Always execute `git pull` before starting skill creation
 - Always invoke `skill-creator` skill first when creating skills
 - Deploy to `/Users/ppsteven/projects/skills/<skill-name>`
-- Create symlinks to both `~/.claude/skills/` and `~/.cline/skills/`
+- Create symlinks to all three tools: `~/.claude/skills/`, `~/.cline/skills/`, and `~/.openclaw/workspace/skills/`
 - Use kebab-case for skill directory names
 - Verify symlinks after creation with `readlink` command
 - Follow skill-creator guidance for SKILL.md format and content
@@ -193,12 +208,12 @@ If user declines, keep the skill local without pushing to remote.
 
 ### DON'T ❌
 
-- Create skills directly in `~/.claude/skills/` or `~/.cline/skills/`
+- Create skills directly in `~/.claude/skills/`, `~/.cline/skills/`, or `~/.openclaw/workspace/skills/`
 - Skip the `skill-creator` skill invocation
 - Create skills in arbitrary locations
 - Use spaces or special characters in skill directory names
 - Edit skills in `~/.claude/plugins/cache/` (that's a read-only cache)
-- Forget to create symlinks for either Claude Code or Cline
+- Forget to create symlinks for any of the three tools (Claude Code, Cline, OpenClaw)
 - Store skill implementations in symlink directories
 - Commit changes without user confirmation
 - Push to repository without verifying skill completion and testing
@@ -218,7 +233,8 @@ After creating a new skill, verify all these points:
 - [ ] SKILL.md frontmatter contains appropriate fields (context, agent if needed)
 - [ ] Symlink created at `~/.claude/skills/<skill-name>`
 - [ ] Symlink created at `~/.cline/skills/<skill-name>`
-- [ ] Both symlinks verified with `readlink` to point to correct source
+- [ ] Symlink created at `~/.openclaw/workspace/skills/<skill-name>`
+- [ ] All three symlinks verified with `readlink` to point to correct source
 - [ ] Skill is discoverable when checking available skills
 - [ ] Skill invocation works and content loads correctly
 - [ ] All resource directories (scripts/, references/, assets/) are optional but named correctly
