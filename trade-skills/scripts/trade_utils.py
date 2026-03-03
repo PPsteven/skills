@@ -216,3 +216,80 @@ class DominantContractManager:
             codes.append(code)
 
         return codes
+
+
+# Constants for file paths
+SCRIPT_DIR = Path(__file__).parent
+DATA_DIR = SCRIPT_DIR / "data"
+TRADING_HOURS_FILE = DATA_DIR / "trading_hours.json"
+DOMINANT_CONTRACTS_FILE = DATA_DIR / "dominant_contracts.json"
+
+
+def main():
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(
+        description="Trade Skills Utilities - Trading hours and dominant contracts"
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
+
+    # is-trading command
+    is_trading_parser = subparsers.add_parser(
+        "is-trading",
+        help="Check if a contract is currently in trading hours"
+    )
+    is_trading_parser.add_argument(
+        "symbol",
+        help="Contract symbol (e.g., SHFE.rb2601, CFFEX.IF2603)"
+    )
+
+    # dominant-contract command
+    dominant_parser = subparsers.add_parser(
+        "dominant-contract",
+        help="Get dominant contract for a variety"
+    )
+    dominant_parser.add_argument(
+        "variety",
+        help="Variety code (e.g., rb, cu, IF)"
+    )
+
+    # update-dominant command
+    update_parser = subparsers.add_parser(
+        "update-dominant",
+        help="Update dominant contracts database"
+    )
+    update_parser.add_argument(
+        "--varieties",
+        help="Comma-separated list of varieties to update (default: all)"
+    )
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+
+    try:
+        if args.command == "is-trading":
+            checker = TradingHoursChecker(TRADING_HOURS_FILE)
+            result = checker.check_trading(args.symbol)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+
+        elif args.command == "dominant-contract":
+            manager = DominantContractManager(DOMINANT_CONTRACTS_FILE)
+            result = manager.get_dominant(args.variety)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+
+        elif args.command == "update-dominant":
+            print("Error: update-dominant not yet implemented", file=sys.stderr)
+            sys.exit(1)
+
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, indent=2, ensure_ascii=False), file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
