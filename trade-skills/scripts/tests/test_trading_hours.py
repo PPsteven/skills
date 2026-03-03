@@ -10,6 +10,41 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from trade_utils import TradingHoursChecker
 from datetime import time
+import json
+import tempfile
+
+
+def create_test_config():
+    """Create temporary test config file"""
+    config = {
+        "SHFE": {
+            "rb": {
+                "name": "螺纹钢",
+                "call_auction": ["20:55-21:00", "08:55-09:00"],
+                "day": ["09:00-10:15", "10:30-11:30", "13:30-15:00"],
+                "night": ["21:00-23:00"]
+            },
+            "cu": {
+                "name": "铜",
+                "call_auction": ["20:55-21:00", "08:55-09:00"],
+                "day": ["09:00-10:15", "10:30-11:30", "13:30-15:00"],
+                "night": ["21:00-01:00"]
+            }
+        },
+        "CFFEX": {
+            "IF": {
+                "name": "沪深300指数",
+                "call_auction": ["09:25-09:30"],
+                "day": ["09:30-11:30", "13:00-15:00"],
+                "night": None
+            }
+        }
+    }
+
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+    json.dump(config, temp_file)
+    temp_file.close()
+    return Path(temp_file.name)
 
 
 class TestSymbolParsing(unittest.TestCase):
@@ -122,6 +157,62 @@ class TestTimeRangeChecking(unittest.TestCase):
         """Test time outside cross-midnight range"""
         result = self.checker.is_in_time_range(time(10, 0), "21:00-01:00")
         self.assertFalse(result)
+
+
+class TestCheckTrading(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.test_config_path = create_test_config()
+
+    def test_check_trading_day_session(self):
+        """Test during day session (10:00)"""
+        from unittest.mock import patch
+        with patch('trade_utils.datetime') as mock_datetime:
+            mock_datetime.now.return_value.time.return_value = time(10, 0)
+
+            checker = TradingHoursChecker(self.test_config_path)
+            result = checker.check_trading("SHFE.rb2601")
+
+            self.assertEqual(result["trading"], True)
+            self.assertEqual(result["session"], "day")
+            self.assertEqual(result["symbol"], "SHFE.rb2601")
+
+    def test_check_trading_night_session(self):
+        """Test during night session (22:00)"""
+        from unittest.mock import patch
+        with patch('trade_utils.datetime') as mock_datetime:
+            mock_datetime.now.return_value.time.return_value = time(22, 0)
+
+            checker = TradingHoursChecker(self.test_config_path)
+            result = checker.check_trading("SHFE.rb2601")
+
+            self.assertEqual(result["trading"], True)
+            self.assertEqual(result["session"], "night")
+
+    def test_check_trading_closed(self):
+        """Test when market is closed (16:00)"""
+        from unittest.mock import patch
+        with patch('trade_utils.datetime') as mock_datetime:
+            mock_datetime.now.return_value.time.return_value = time(16, 0)
+
+            checker = TradingHoursChecker(self.test_config_path)
+            result = checker.check_trading("SHFE.rb2601")
+
+            self.assertEqual(result["trading"], False)
+            self.assertIsNone(result["session"])
+
+    def test_check_trading_cross_midnight(self):
+        """Test cross-midnight session (00:30 for copper)"""
+        from unittest.mock import patch
+        with patch('trade_utils.datetime') as mock_datetime:
+            mock_datetime.now.return_value.time.return_value = time(0, 30)
+
+            checker = TradingHoursChecker(self.test_config_path)
+            result = checker.check_trading("SHFE.cu2601")
+
+            self.assertEqual(result["trading"], True)
+            self.assertEqual(result["session"], "night")
 
 
 if __name__ == "__main__":

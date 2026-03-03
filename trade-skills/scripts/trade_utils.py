@@ -5,8 +5,9 @@ Provides trading hours checking and dominant contract lookup for China futures.
 """
 
 from pathlib import Path
-from typing import Tuple
-from datetime import time
+from typing import Tuple, Dict
+from datetime import time, datetime
+import json
 
 
 class TradingHoursChecker:
@@ -14,7 +15,11 @@ class TradingHoursChecker:
 
     def __init__(self, config_file: Path):
         self.config_file = config_file
-        self.config = {}
+        if config_file:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                self.config = json.load(f)
+        else:
+            self.config = {}
 
     def parse_symbol(self, symbol: str) -> Tuple[str, str]:
         """
@@ -78,3 +83,59 @@ class TradingHoursChecker:
         else:
             # Normal range: 09:00-10:15
             return start <= current <= end
+
+    def check_trading(self, symbol: str) -> Dict:
+        """
+        Check if contract is currently trading.
+
+        Args:
+            symbol: Contract symbol like 'SHFE.rb2601'
+
+        Returns:
+            {
+                "symbol": "SHFE.rb2601",
+                "trading": True/False,
+                "session": "day"/"night"/None,
+                "next_session": {...}  # Optional
+            }
+        """
+        exchange, variety = self.parse_symbol(symbol)
+
+        # Get config for this exchange and variety
+        if exchange not in self.config:
+            raise ValueError(f"No config for exchange: {exchange}")
+
+        if variety not in self.config[exchange]:
+            raise ValueError(
+                f"No config for variety: {variety} on {exchange}"
+            )
+
+        variety_config = self.config[exchange][variety]
+        current_time = datetime.now().time()
+
+        # Check day session
+        if variety_config.get("day"):
+            for time_range in variety_config["day"]:
+                if self.is_in_time_range(current_time, time_range):
+                    return {
+                        "symbol": symbol,
+                        "trading": True,
+                        "session": "day"
+                    }
+
+        # Check night session
+        if variety_config.get("night"):
+            for time_range in variety_config["night"]:
+                if self.is_in_time_range(current_time, time_range):
+                    return {
+                        "symbol": symbol,
+                        "trading": True,
+                        "session": "night"
+                    }
+
+        # Not trading
+        return {
+            "symbol": symbol,
+            "trading": False,
+            "session": None
+        }
