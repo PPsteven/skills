@@ -67,3 +67,14 @@ class TradingHoursChecker:
     def is_cross_midnight(self, start: time, end: time) -> bool:
         """Check if time range crosses midnight (e.g., 21:00-01:00)"""
         return start > end
+
+    def is_in_time_range(self, current: time, time_range: str) -> bool:
+        """Check if current time is within the time range"""
+        start, end = self.parse_time_range(time_range)
+
+        if self.is_cross_midnight(start, end):
+            # Crosses midnight: 21:00-01:00
+            return current >= start or current <= end
+        else:
+            # Normal range: 09:00-10:15
+            return start <= current <= end

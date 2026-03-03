@@ -88,5 +88,41 @@ class TestTimeRangeParsing(unittest.TestCase):
         self.assertTrue(result)
 
 
+class TestTimeRangeChecking(unittest.TestCase):
+
+    def setUp(self):
+        self.checker = TradingHoursChecker(None)
+
+    def test_is_in_time_range_normal_inside(self):
+        """Test time inside normal range"""
+        result = self.checker.is_in_time_range(time(9, 30), "09:00-10:15")
+        self.assertTrue(result)
+
+    def test_is_in_time_range_normal_outside_before(self):
+        """Test time before normal range"""
+        result = self.checker.is_in_time_range(time(8, 30), "09:00-10:15")
+        self.assertFalse(result)
+
+    def test_is_in_time_range_normal_outside_after(self):
+        """Test time after normal range"""
+        result = self.checker.is_in_time_range(time(10, 30), "09:00-10:15")
+        self.assertFalse(result)
+
+    def test_is_in_time_range_cross_midnight_before_midnight(self):
+        """Test time in cross-midnight range (before midnight)"""
+        result = self.checker.is_in_time_range(time(22, 0), "21:00-01:00")
+        self.assertTrue(result)
+
+    def test_is_in_time_range_cross_midnight_after_midnight(self):
+        """Test time in cross-midnight range (after midnight)"""
+        result = self.checker.is_in_time_range(time(0, 30), "21:00-01:00")
+        self.assertTrue(result)
+
+    def test_is_in_time_range_cross_midnight_outside(self):
+        """Test time outside cross-midnight range"""
+        result = self.checker.is_in_time_range(time(10, 0), "21:00-01:00")
+        self.assertFalse(result)
+
+
 if __name__ == "__main__":
     unittest.main()
