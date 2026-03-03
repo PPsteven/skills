@@ -154,3 +154,156 @@ Example: User wants "daily prices for stock 000001"
 - Step 2: Found in akshare-data table → stock_zh_a_hist API
 - Step 3: Invoke akshare-data skill
 - Step 4: Command: `python3 scripts/akshare_cli.py stock_zh_a_hist --symbol 000001 --start_date 20240101 --end_date 20240131`
+
+---
+
+## Scripts & Utilities
+
+trade-skills provides utility scripts for futures market operations.
+
+### 1. Trading Hours Check
+
+Check if a futures contract is currently in trading hours:
+
+**Command:**
+```bash
+python3 scripts/trade_utils.py is-trading <EXCHANGE>.<SYMBOL>
+```
+
+**Examples:**
+```bash
+# Check if rebar is trading now
+python3 scripts/trade_utils.py is-trading SHFE.rb2601
+
+# Output:
+# {
+#   "trading": true,
+#   "session": "day",
+#   "symbol": "SHFE.rb2601"
+# }
+```
+
+**Notes:**
+- Uses China Standard Time (Asia/Shanghai)
+- Handles cross-midnight night sessions (e.g., 21:00-01:00)
+- Returns `session: null` when market is closed
+
+---
+
+### 2. Dominant Contract Query
+
+Get the dominant (main) contract for a futures variety:
+
+**Command:**
+```bash
+python3 scripts/trade_utils.py dominant-contract <VARIETY>
+```
+
+**Examples:**
+```bash
+# Get dominant contract for rebar
+python3 scripts/trade_utils.py dominant-contract rb
+
+# Output:
+# {
+#   "symbol": "rb",
+#   "dominant": "rb2505",
+#   "exchange": "SHFE"
+# }
+```
+
+**First-time setup:**
+```bash
+# Initialize dominant contracts database
+python3 scripts/trade_utils.py update-dominant
+```
+
+---
+
+### 3. Update Dominant Contracts
+
+Update the dominant contracts database by querying real-time market data:
+
+**Command:**
+```bash
+# Update all varieties (recommended weekly)
+python3 scripts/trade_utils.py update-dominant
+
+# Update specific varieties only
+python3 scripts/trade_utils.py update-dominant --varieties rb,cu,al,au
+```
+
+**Output:**
+```json
+{
+  "updated": 32,
+  "failed": 0,
+  "timestamp": "2026-03-03T15:30:45"
+}
+```
+
+**Requirements:**
+- Requires `tianqin-data` skill installed
+- Requires `TQ_API_KEY` environment variable set
+- Takes approximately 60 seconds for full update
+
+**Maintenance:**
+- Run weekly to keep dominant contracts up-to-date
+- Dominant contracts change as trading months approach expiry
+
+---
+
+## Configuration Files
+
+Scripts use local JSON files for configuration:
+
+- `scripts/data/trading_hours.json` - Trading hours for all varieties (static)
+- `scripts/data/dominant_contracts.json` - Current dominant contracts (updated via command)
+
+**Regenerate trading hours config:**
+```bash
+python3 scripts/generate_trading_hours.py
+```
+
+---
+
+## Troubleshooting
+
+### "Variety not found" Error
+
+If you see: `Variety 'rb' not found. Run 'update-dominant' command first.`
+
+**Solution:** Initialize the dominant contracts database:
+```bash
+python3 scripts/trade_utils.py update-dominant --varieties rb
+```
+
+### "Invalid symbol format" Error
+
+If you see: `Invalid symbol format: rb2601`
+
+**Solution:** Use full exchange prefix format:
+```bash
+# Wrong: python3 scripts/trade_utils.py is-trading rb2601
+# Right:
+python3 scripts/trade_utils.py is-trading SHFE.rb2601
+```
+
+### Update-Dominant Fails
+
+If API calls fail, check:
+
+1. **TQ_API_KEY environment variable:**
+   ```bash
+   echo $TQ_API_KEY
+   ```
+
+2. **tianqin-data skill installed:**
+   ```bash
+   ls -la ~/.claude/skills/tianqin-data
+   ```
+
+3. **Test API connection:**
+   ```bash
+   python3 ../tianqin-data/scripts/tq_cli.py quote SHFE.rb2601
+   ```
