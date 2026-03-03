@@ -5,9 +5,11 @@ Provides trading hours checking and dominant contract lookup for China futures.
 """
 
 from pathlib import Path
-from typing import Tuple, Dict
-from datetime import time, datetime
+from typing import Tuple, Dict, Optional, List
+from datetime import time, datetime, timedelta
 import json
+import subprocess
+import os
 
 
 class TradingHoursChecker:
@@ -139,3 +141,78 @@ class TradingHoursChecker:
             "trading": False,
             "session": None
         }
+
+
+class DominantContractManager:
+    """Manage dominant contract configuration and lookup"""
+
+    def __init__(self, config_file: str):
+        """
+        Initialize dominant contract manager
+
+        Args:
+            config_file: Path to dominant_contracts.json
+        """
+        self.config_file = config_file
+        self.config = self.load_config()
+
+    def load_config(self) -> Dict[str, str]:
+        """Load dominant contracts from JSON file"""
+        if not os.path.exists(self.config_file):
+            return {}
+
+        with open(self.config_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def save_config(self):
+        """Save current config to JSON file"""
+        with open(self.config_file, 'w', encoding='utf-8') as f:
+            json.dump(self.config, f, ensure_ascii=False, indent=2)
+
+    def get_dominant(self, variety: str) -> Optional[str]:
+        """
+        Get dominant contract for a variety
+
+        Args:
+            variety: Variety code like 'rb', 'i', 'SR'
+
+        Returns:
+            Dominant contract code like 'rb2505', or None if not found
+        """
+        return self.config.get(variety)
+
+    def generate_contract_codes(
+        self,
+        variety: str,
+        exchange: str = "SHFE",
+        months: int = 6
+    ) -> List[str]:
+        """
+        Generate contract codes for next N months
+
+        Args:
+            variety: Variety code like 'rb', 'SR'
+            exchange: Exchange code (SHFE/DCE/CFFEX use 4 digits, CZCE uses 3)
+            months: Number of months to generate
+
+        Returns:
+            List of contract codes like ['rb2503', 'rb2504', ...]
+        """
+        codes = []
+        now = datetime.now()
+
+        for i in range(months):
+            future_date = now + timedelta(days=30 * i)
+            year = future_date.year % 100  # Get last 2 digits
+            month = future_date.month
+
+            if exchange == "CZCE":
+                # CZCE format: SR + YMM (e.g., SR503)
+                code = f"{variety}{year % 10}{month:02d}"
+            else:
+                # SHFE/DCE/CFFEX format: rb + YYMM (e.g., rb2503)
+                code = f"{variety}{year:02d}{month:02d}"
+
+            codes.append(code)
+
+        return codes
