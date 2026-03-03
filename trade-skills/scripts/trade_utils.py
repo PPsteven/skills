@@ -6,6 +6,7 @@ Provides trading hours checking and dominant contract lookup for China futures.
 
 from pathlib import Path
 from typing import Tuple
+from datetime import time
 
 
 class TradingHoursChecker:
@@ -52,3 +53,17 @@ class TradingHoursChecker:
             )
 
         return exchange, variety
+
+    def parse_time_range(self, time_range: str) -> Tuple[time, time]:
+        """
+        Parse time range like '09:00-10:15' into (start_time, end_time)
+        """
+        start_str, end_str = time_range.split('-')
+        start_hour, start_min = map(int, start_str.split(':'))
+        end_hour, end_min = map(int, end_str.split(':'))
+
+        return time(start_hour, start_min), time(end_hour, end_min)
+
+    def is_cross_midnight(self, start: time, end: time) -> bool:
+        """Check if time range crosses midnight (e.g., 21:00-01:00)"""
+        return start > end

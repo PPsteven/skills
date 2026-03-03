@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from trade_utils import TradingHoursChecker
+from datetime import time
 
 
 class TestSymbolParsing(unittest.TestCase):
@@ -57,6 +58,34 @@ class TestSymbolParsing(unittest.TestCase):
         checker = TradingHoursChecker(None)
         with self.assertRaises(ValueError):
             checker.parse_symbol("SHFE.2601")
+
+
+class TestTimeRangeParsing(unittest.TestCase):
+
+    def setUp(self):
+        self.checker = TradingHoursChecker(None)
+
+    def test_parse_time_range_morning(self):
+        """Test parsing 09:00-10:15"""
+        start, end = self.checker.parse_time_range("09:00-10:15")
+        self.assertEqual(start, time(9, 0))
+        self.assertEqual(end, time(10, 15))
+
+    def test_parse_time_range_night(self):
+        """Test parsing 21:00-23:00"""
+        start, end = self.checker.parse_time_range("21:00-23:00")
+        self.assertEqual(start, time(21, 0))
+        self.assertEqual(end, time(23, 0))
+
+    def test_is_cross_midnight_false(self):
+        """Test 09:00-10:15 does not cross midnight"""
+        result = self.checker.is_cross_midnight(time(9, 0), time(10, 15))
+        self.assertFalse(result)
+
+    def test_is_cross_midnight_true(self):
+        """Test 21:00-01:00 crosses midnight"""
+        result = self.checker.is_cross_midnight(time(21, 0), time(1, 0))
+        self.assertTrue(result)
 
 
 if __name__ == "__main__":
