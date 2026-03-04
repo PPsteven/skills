@@ -103,15 +103,32 @@ Read the appropriate template file and follow its structure.
 
 Follow the selected template to create a structured summary. Key principles:
 
-1. **Extract metadata first**: Title, author, date, source URL
+1. **YAML frontmatter (REQUIRED)**: Every generated document MUST start with YAML frontmatter containing:
+   ```yaml
+   ---
+   title: <article title>
+   author: <author name or source>
+   date: <publication date in YYYY-MM-DD format>
+   source: <original URL>
+   tags: [<relevant>, <topic>, <tags>]
+   created: <YYYY-MM-DD current date>
+   ---
+   ```
+   - **title**: Extract from article or page title
+   - **author**: Extract from article metadata, or use source name (e.g., "扬子晚报")
+   - **date**: Publication date in YYYY-MM-DD format (if available, else use current date)
+   - **source**: Full original URL (critical for reference)
+   - **tags**: 3-5 relevant topic tags (e.g., [新闻, 银行, 金融, 系统故障])
+   - **created**: Current date in YYYY-MM-DD format (when saved to knowledge base)
+
 2. **Create executive summary**: 1-3 paragraphs capturing the essence
+
 3. **Extract key points**: Bullet list of main takeaways
+
 4. **Preserve important details**:
    - For technical content: Include code snippets, diagrams (as Mermaid), architecture notes
    - For research: Include methodology, findings, conclusions
    - For general: Include interesting insights, quotes, actionable advice
-
-5. **Add tags**: Relevant topic tags for organization (e.g., #技术, #研究, #tutorial)
 
 ### Step 6: Generate Filename
 
@@ -244,7 +261,9 @@ Action:
 
 ## Important Notes
 
+- **YAML frontmatter is mandatory** - Every document MUST include complete YAML frontmatter with title, author, date, source, tags, and created fields
 - **Always preserve the source URL** in the metadata - it's crucial for verification and follow-up
+- **Use YYYY-MM-DD date format** consistently in both `date` and `created` fields
 - **Browser mode is default**: Always try `profile="openclaw"` browser first for best compatibility
 - **Don't over-summarize technical content** - keep important details, code, and diagrams
 - **Ask before overwriting** - if a file with the same name exists, ask the user first
