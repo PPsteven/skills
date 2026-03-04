@@ -39,20 +39,43 @@ Wait for their response before proceeding.
 
 ### Step 2: Fetch Article Content
 
-**Primary method - WebFetch tool (preferred)**:
+**Priority order** for fetching content:
+
+**1. WebFetch tool (preferred - fastest)**:
 ```
-Use WebFetch tool with the URL and prompt: "Extract the full article content including title, author, date, and main text. Preserve any code blocks, lists, and formatting."
+Use web_fetch tool with the URL to extract readable content.
 ```
 
-**Fallback method - curl/wget**:
-If WebFetch fails or is unavailable, use curl:
+**2. Browser tool (for JavaScript-heavy sites)**:
+If WebFetch fails or returns minimal content (e.g., WeChat articles, SPA sites), use the **independent browser mode**:
+
+```
+1. Open URL with browser tool using profile="openclaw":
+   browser(action="open", profile="openclaw", targetUrl="<url>")
+
+2. Wait 2-3 seconds for page to load:
+   exec("sleep 3")
+
+3. Capture content with snapshot:
+   browser(action="snapshot", profile="openclaw", targetId="<targetId>")
+
+4. Close browser when done:
+   browser(action="close", profile="openclaw", targetId="<targetId>")
+```
+
+**Why independent browser mode?**
+- `profile="openclaw"` runs a standalone headless browser - no Chrome extension needed
+- Perfect for sites that block web scrapers or require JavaScript rendering
+- WeChat (mp.weixin.qq.com), social media, and modern SPAs often need this approach
+
+**3. Fallback - curl/wget**:
+If browser is unavailable, try curl:
 ```bash
 curl -L -A "Mozilla/5.0" "<url>" > /tmp/article_content.html
 ```
-
 Then extract text content from the HTML.
 
-**Error handling**: If both methods fail, inform the user and ask if they'd like to paste the content manually.
+**Error handling**: If all methods fail, inform the user and ask if they'd like to paste the content manually.
 
 ### Step 3: Determine Content Type
 
@@ -129,24 +152,20 @@ Templates can be extended over time. If you encounter content that doesn't fit e
 
 ## Error Handling
 
-**URL fetch fails**:
+**URL fetch fails (WebFetch)**:
 ```
-I couldn't fetch the content from that URL. This might be due to:
-- Paywall or authentication required
-- Website blocking automated access
-- Network issues
-
-Would you like to paste the content manually, or try a different URL?
+WebFetch couldn't get the content. Trying browser mode...
 ```
+→ Automatically switch to browser tool with `profile="openclaw"`
 
-**Content extraction fails**:
+**Content extraction fails (Browser)**:
 ```
 I fetched the page but couldn't extract readable content. The page might be:
-- JavaScript-heavy (requires browser rendering)
-- Behind a login
+- Behind a login or paywall
+- Requires user interaction (captcha, cookies)
 - Not article content (e.g., video, image gallery)
 
-Would you like me to save the raw HTML, or skip this URL?
+Would you like to paste the content manually, or try a different URL?
 ```
 
 **Knowledge base path not writable**:
@@ -161,21 +180,40 @@ Please check:
 
 ## Examples
 
-**Example 1: Technical article**
+**Example 1: WeChat article (requires browser)**
+```
+User: "保存这个链接到我的知识库: https://mp.weixin.qq.com/s/xxxxx"
+Context: Knowledge base at ~/Documents/obsidian/minions/
+
+Action:
+1. Knowledge base found: ~/Documents/obsidian/minions/00.工作区/02.技术研究/
+2. Try WebFetch - returns minimal content (WeChat uses JS rendering)
+3. Switch to browser with profile="openclaw":
+   - Open URL in headless browser
+   - Wait 3 seconds for page load
+   - Snapshot to extract full content
+   - Close browser
+4. Detect content type (general news article)
+5. Use default-template.md
+6. Generate summary with YAML frontmatter
+7. Save as: ~/Documents/obsidian/minions/00.工作区/02.技术研究/2026-03-04-article-title.md
+```
+
+**Example 2: Technical article**
 ```
 User: "保存这个链接到我的 Obsidian: https://example.com/how-llm-agents-work"
 Context: Obsidian vault at ~/Documents/obsidian/
 
 Action:
 1. Knowledge base found: ~/Documents/obsidian/
-2. Fetch article with WebFetch
+2. Fetch article with WebFetch (works well for standard sites)
 3. Detect technical content (contains code, architecture)
 4. Use technical-template.md
 5. Generate summary with Mermaid diagrams
 6. Save as: ~/Documents/obsidian/2026-03-04-how-llm-agents-work.md
 ```
 
-**Example 2: General article, no context**
+**Example 3: General article, no context**
 ```
 User: "Summarize this and save to my notes: https://blog.example.com/productivity-tips"
 Context: No knowledge base mentioned
@@ -189,7 +227,7 @@ Action:
 6. Save as: ~/notes/articles/2026-03-04-productivity-tips.md
 ```
 
-**Example 3: Batch processing**
+**Example 4: Batch processing**
 ```
 User: "Save all these to my research folder at ~/Documents/research/:
 - https://arxiv.org/paper1
@@ -207,10 +245,12 @@ Action:
 ## Important Notes
 
 - **Always preserve the source URL** in the metadata - it's crucial for verification and follow-up
+- **Browser mode for tough sites**: WeChat, Twitter, LinkedIn, and modern SPAs often need `profile="openclaw"` browser mode
 - **Don't over-summarize technical content** - keep important details, code, and diagrams
 - **Ask before overwriting** - if a file with the same name exists, ask the user first
 - **Handle non-English content** - preserve the original language in summaries
 - **Respect rate limits** - if processing multiple URLs, add small delays between requests
+- **Clean up browser sessions** - always close browser tabs when done to free resources
 
 ## Related Skills
 
