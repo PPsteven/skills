@@ -41,13 +41,8 @@ Wait for their response before proceeding.
 
 **Priority order** for fetching content:
 
-**1. WebFetch tool (preferred - fastest)**:
-```
-Use web_fetch tool with the URL to extract readable content.
-```
-
-**2. Browser tool (for JavaScript-heavy sites)**:
-If WebFetch fails or returns minimal content (e.g., WeChat articles, SPA sites), use the **independent browser mode**:
+**1. Browser tool - Independent browser mode (PREFERRED)**:
+Always try browser first for best compatibility with modern websites:
 
 ```
 1. Open URL with browser tool using profile="openclaw":
@@ -63,13 +58,20 @@ If WebFetch fails or returns minimal content (e.g., WeChat articles, SPA sites),
    browser(action="close", profile="openclaw", targetId="<targetId>")
 ```
 
-**Why independent browser mode?**
+**Why browser mode is preferred:**
 - `profile="openclaw"` runs a standalone headless browser - no Chrome extension needed
-- Perfect for sites that block web scrapers or require JavaScript rendering
-- WeChat (mp.weixin.qq.com), social media, and modern SPAs often need this approach
+- Handles JavaScript rendering (WeChat, social media, modern SPAs)
+- Works with sites that block web scrapers
+- Most reliable method for content extraction
 
-**3. Fallback - curl/wget**:
-If browser is unavailable, try curl:
+**2. WebFetch tool (fallback)**:
+If browser is unavailable or fails, try WebFetch:
+```
+Use web_fetch tool with the URL to extract readable content.
+```
+
+**3. curl/wget (last resort)**:
+If both browser and WebFetch fail, try curl:
 ```bash
 curl -L -A "Mozilla/5.0" "<url>" > /tmp/article_content.html
 ```
@@ -152,15 +154,15 @@ Templates can be extended over time. If you encounter content that doesn't fit e
 
 ## Error Handling
 
-**URL fetch fails (WebFetch)**:
+**Browser fetch fails**:
 ```
-WebFetch couldn't get the content. Trying browser mode...
+Browser couldn't load the page. Trying WebFetch as fallback...
 ```
-→ Automatically switch to browser tool with `profile="openclaw"`
+→ Automatically switch to web_fetch tool
 
-**Content extraction fails (Browser)**:
+**Content extraction fails (all methods)**:
 ```
-I fetched the page but couldn't extract readable content. The page might be:
+I tried multiple methods but couldn't extract readable content. The page might be:
 - Behind a login or paywall
 - Requires user interaction (captcha, cookies)
 - Not article content (e.g., video, image gallery)
@@ -180,23 +182,21 @@ Please check:
 
 ## Examples
 
-**Example 1: WeChat article (requires browser)**
+**Example 1: WeChat article**
 ```
 User: "保存这个链接到我的知识库: https://mp.weixin.qq.com/s/xxxxx"
 Context: Knowledge base at ~/Documents/obsidian/minions/
 
 Action:
 1. Knowledge base found: ~/Documents/obsidian/minions/00.工作区/02.技术研究/
-2. Try WebFetch - returns minimal content (WeChat uses JS rendering)
-3. Switch to browser with profile="openclaw":
-   - Open URL in headless browser
-   - Wait 3 seconds for page load
-   - Snapshot to extract full content
-   - Close browser
-4. Detect content type (general news article)
-5. Use default-template.md
-6. Generate summary with YAML frontmatter
-7. Save as: ~/Documents/obsidian/minions/00.工作区/02.技术研究/2026-03-04-article-title.md
+2. Open URL with browser (profile="openclaw")
+3. Wait 3 seconds for page load
+4. Snapshot to extract full content
+5. Close browser
+6. Detect content type (general news article)
+7. Use default-template.md
+8. Generate summary with YAML frontmatter
+9. Save as: ~/Documents/obsidian/minions/00.工作区/02.技术研究/2026-03-04-article-title.md
 ```
 
 **Example 2: Technical article**
@@ -206,7 +206,7 @@ Context: Obsidian vault at ~/Documents/obsidian/
 
 Action:
 1. Knowledge base found: ~/Documents/obsidian/
-2. Fetch article with WebFetch (works well for standard sites)
+2. Fetch article with browser (profile="openclaw") - most reliable method
 3. Detect technical content (contains code, architecture)
 4. Use technical-template.md
 5. Generate summary with Mermaid diagrams
@@ -221,7 +221,7 @@ Context: No knowledge base mentioned
 Action:
 1. No knowledge base in context - ask user for location
 2. User responds: "~/notes/articles/"
-3. Fetch article with WebFetch
+3. Fetch article with browser (profile="openclaw")
 4. Detect general content
 5. Use default-template.md
 6. Save as: ~/notes/articles/2026-03-04-productivity-tips.md
@@ -245,7 +245,7 @@ Action:
 ## Important Notes
 
 - **Always preserve the source URL** in the metadata - it's crucial for verification and follow-up
-- **Browser mode for tough sites**: WeChat, Twitter, LinkedIn, and modern SPAs often need `profile="openclaw"` browser mode
+- **Browser mode is default**: Always try `profile="openclaw"` browser first for best compatibility
 - **Don't over-summarize technical content** - keep important details, code, and diagrams
 - **Ask before overwriting** - if a file with the same name exists, ask the user first
 - **Handle non-English content** - preserve the original language in summaries
