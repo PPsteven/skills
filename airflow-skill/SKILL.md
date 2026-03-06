@@ -1,5 +1,5 @@
 ---
-name: airflow-api
+name: airflow-skill
 description: Interact with Apache Airflow REST API via CLI commands to query task execution status, retrieve logs, and manage DAG operations. This skill should be used when needing to query task runs, retrieve task logs, get DAG details, trigger DAG runs, or perform other Airflow workflow management operations programmatically.
 ---
 
