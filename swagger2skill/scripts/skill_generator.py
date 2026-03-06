@@ -185,6 +185,7 @@ if __name__ == '__main__':
         filepath.chmod(0o755)
         print(f"  ✓ Created scripts/cli_tool.py")
 
+
     def _generate_cli_commands(self) -> str:
         """Generate Click CLI command stubs for each category."""
         commands = []
@@ -203,8 +204,9 @@ def {self._slugify(category)}_group():
 def {self._slugify(category)}_list(limit):
     """List {category} items"""
     # TODO: Implement {category} list endpoint
+    slug = '{self._slugify(category)}'
     click.echo(f"Fetching {category} items (limit={{limit}})...")
-    # result = api.request('GET', '/api/v1/{self._slugify(category)}?limit={{limit}}')
+    # result = api.request('GET', f'/api/v1/{{slug}}?limit={{limit}}')
     # click.echo(json.dumps(result, indent=2))
 
 
@@ -213,8 +215,9 @@ def {self._slugify(category)}_list(limit):
 def {self._slugify(category)}_detail(item_id):
     """Get {category} details"""
     # TODO: Implement {category} detail endpoint
-    click.echo(f"Fetching {category}} details for {{item_id}}...")
-    # result = api.request('GET', '/api/v1/{self._slugify(category)}/{{item_id}}')
+    slug = '{self._slugify(category)}'
+    click.echo(f"Fetching {category} details for {{item_id}}...")
+    # result = api.request('GET', f'/api/v1/{{slug}}/{{item_id}}')
     # click.echo(json.dumps(result, indent=2))
 ''')
 
@@ -325,9 +328,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-'''
-
-        filepath = self.skill_dir / 'scripts' / 'skill_generator.py'
-        filepath.write_text(cli_code)
-        filepath.chmod(0o755)
-        print(f"  ✓ Created scripts/skill_generator.py")

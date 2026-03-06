@@ -39,6 +39,8 @@ After processing the OpenAPI file, you'll see:
 
 1. **Available Categories** - List of all API categories found (e.g., DAG, Variable, Task, Connection)
 2. **Selection Prompt** - Choose which categories to include in the generated skill
+   - **Interactive mode (TTY)**: Shows interactive menu for manual selection
+   - **Non-interactive mode (fork/pipe)**: Automatically selects all categories as default
 3. **Generation** - Creates a new skill directory with:
    - `SKILL.md` - Complete skill documentation
    - `scripts/cli_tool.py` - CLI wrapper for selected APIs
