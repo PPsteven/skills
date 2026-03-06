@@ -1,34 +1,43 @@
-# Unsupported API Categories
+# Unsupported Airflow API Categories
 
-The following Airflow API categories are available but not currently wrapped in the CLI tool:
+The following API categories are available in the Airflow API but not yet implemented in this skill.
 
-- Config
-- DagStats
-- DagWarning
-- EventLog
-- ImportError
-- Monitoring
-- Permission
-- Plugin
-- Pool
-- Provider
-- Role
-- User
-- XCom
+## Categories Not Implemented
 
-## Rationale
+- **DagStats** (1 endpoints)
+- **DagWarning** (1 endpoints)
+- **Dataset** (11 endpoints)
+- **EventLog** (2 endpoints)
+- **ImportError** (2 endpoints)
+- **Monitoring** (2 endpoints)
+- **Permission** (1 endpoints)
+- **Plugin** (1 endpoints)
+- **Pool** (5 endpoints)
+- **Provider** (1 endpoints)
+- **User** (5 endpoints)
+- **XCom** (2 endpoints)
 
-These categories were not included to keep the initial skill focused on core operational needs (DAGs, tasks, variables, connections, datasets). 
+## Future Implementation
 
-## Future Expansion
+To add support for these categories:
 
-To add support for these categories in a future version:
+1. Review the endpoint documentation
+2. Add category group to `scripts/cli_tool.py`
+3. Implement commands for each endpoint
+4. Update `SKILL.md` with new commands
+5. Test with running Airflow instance
 
-1. Edit `scripts/cli_tool.py` to add new Click command groups
-2. Implement endpoint wrappers for each unsupported category
-3. Update this documentation
+## Category Descriptions
 
-## See Also
-
-For complete Airflow API documentation, visit:
-https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html
+- **Dataset**: Airflow Dataset management and triggering
+- **DagStats**: Statistical information about DAG runs
+- **DagWarning**: Warning messages and issues for DAGs
+- **EventLog**: Audit log of events in Airflow
+- **ImportError**: Python module import errors
+- **Monitoring**: System health and metrics monitoring
+- **Permission**: Fine-grained permission management
+- **Plugin**: Installed plugins and plugins information
+- **Pool**: Resource pool management for parallelization
+- **Provider**: Installed provider packages
+- **User**: User account management
+- **XCom**: Cross-communication between tasks

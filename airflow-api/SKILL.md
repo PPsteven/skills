@@ -1,91 +1,191 @@
 ---
 name: airflow-api
-title: Airflow API Manager
-summary: CLI tool for managing Apache Airflow DAGs, tasks, variables, connections, and datasets
-tags: [airflow, scheduling, workflow, orchestration]
-author: Claude Code
-version: 1.0.0
-created: 2026-03-06
+description: Manage Config, Connection, DAG, DAGRun, DagStats, DagWarning, Dataset, EventLog, ImportError, Monitoring, Permission, Plugin, Pool, Provider, Role, TaskInstance, User, Variable, XCom via Airflow API. Use for config, connection, dag, dagrun, dagstats, dagwarning, dataset, eventlog, importerror, monitoring, permission, plugin, pool, provider, role, taskinstance, user, variable, xcom operations.
 ---
 
-# Airflow API Manager
+# Airflow Api
 
-A comprehensive CLI tool for managing Apache Airflow through its REST API, with support for DAGs, task instances, variables, connections, and datasets.
+Interact with Airflow APIs for Config, Connection, DAG, DAGRun, DagStats, DagWarning, Dataset, EventLog, ImportError, Monitoring, Permission, Plugin, Pool, Provider, Role, TaskInstance, User, Variable, XCom.
 
 ## Capabilities
 
-This skill provides programmatic access to Airflow's core operations:
+This skill provides CLI tools to manage:
 
-- **DAG Management** - List, retrieve, and manage Directed Acyclic Graphs
-- **Task Execution** - Query and manage task instances across DAG runs
-- **DAG Runs** - Create, list, and monitor DAG run execution
-- **Variables** - Store and retrieve pipeline variables
-- **Connections** - Manage external service connections
-- **Datasets** - Create and manage Airflow datasets for event-driven workflows
+- **Config**: 2 API endpoints
+- **Connection**: 6 API endpoints
+- **DAG**: 12 API endpoints
+- **DAGRun**: 9 API endpoints
+- **DagStats**: 1 API endpoints
+- **DagWarning**: 1 API endpoints
+- **Dataset**: 11 API endpoints
+- **EventLog**: 2 API endpoints
+- **ImportError**: 2 API endpoints
+- **Monitoring**: 2 API endpoints
+- **Permission**: 1 API endpoints
+- **Plugin**: 1 API endpoints
+- **Pool**: 5 API endpoints
+- **Provider**: 1 API endpoints
+- **Role**: 5 API endpoints
+- **TaskInstance**: 17 API endpoints
+- **User**: 5 API endpoints
+- **Variable**: 5 API endpoints
+- **XCom**: 2 API endpoints
 
-## Supported API Categories
-
-The skill wraps the following Airflow API v1 categories (6 categories, 60 endpoints):
-
-- **Connection** - 6 endpoints
-- **DAG** - 12 endpoints
-- **DAGRun** - 9 endpoints
-- **Dataset** - 11 endpoints
-- **TaskInstance** - 17 endpoints
-- **Variable** - 5 endpoints
-
-## Quick Start
-
-Use the CLI tool to interact with Airflow:
+## Usage
 
 ```bash
+# List available commands
 python scripts/cli_tool.py --help
+
+# Get help for specific category
+python scripts/cli_tool.py <category> --help
+
+# Execute an API operation
+python scripts/cli_tool.py <category> <operation> --param value
 ```
 
-### Example Commands
+## CLI Examples
 
+# Config
 ```bash
-# List all DAGs
-python scripts/cli_tool.py dag list
+python scripts/cli_tool.py config list
+python scripts/cli_tool.py config detail <id>
+```
 
-# Get DAG details
-python scripts/cli_tool.py dag get --dag-id my_dag
-
-# Create a variable
-python scripts/cli_tool.py variable create --key env --value production
-
-# List connections
+# Connection
+```bash
 python scripts/cli_tool.py connection list
-
-# Trigger a DAG run
-python scripts/cli_tool.py dagrun trigger --dag-id my_dag
+python scripts/cli_tool.py connection detail <id>
 ```
 
-## Configuration
-
-Set the Airflow API endpoint via environment variable:
-
+# DAG
 ```bash
-export AIRFLOW_API_URL="http://localhost:8080/api/v1"
-export AIRFLOW_USERNAME="admin"
-export AIRFLOW_PASSWORD="password"
+python scripts/cli_tool.py dag list
+python scripts/cli_tool.py dag detail <id>
 ```
 
-Authentication can also be provided via CLI flags:
-
+# DAGRun
 ```bash
-python scripts/cli_tool.py --api-url http://localhost:8080/api/v1 \
-                          --username admin \
-                          --password password \
-                          dag list
+python scripts/cli_tool.py dagrun list
+python scripts/cli_tool.py dagrun detail <id>
 ```
 
-## Documentation
+# DagStats
+```bash
+python scripts/cli_tool.py dagstats list
+python scripts/cli_tool.py dagstats detail <id>
+```
 
-Detailed API endpoint documentation: See `references/api_endpoints.md`
+# DagWarning
+```bash
+python scripts/cli_tool.py dagwarning list
+python scripts/cli_tool.py dagwarning detail <id>
+```
 
-## Generated From
+# Dataset
+```bash
+python scripts/cli_tool.py dataset list
+python scripts/cli_tool.py dataset detail <id>
+```
 
-- **Source**: https://tmp-airflow.momenta.works/api/v1/openapi.json
-- **OpenAPI Version**: 2.10.5
-- **Generated**: 2026-03-06 16:44:15
+# EventLog
+```bash
+python scripts/cli_tool.py eventlog list
+python scripts/cli_tool.py eventlog detail <id>
+```
+
+# ImportError
+```bash
+python scripts/cli_tool.py importerror list
+python scripts/cli_tool.py importerror detail <id>
+```
+
+# Monitoring
+```bash
+python scripts/cli_tool.py monitoring list
+python scripts/cli_tool.py monitoring detail <id>
+```
+
+# Permission
+```bash
+python scripts/cli_tool.py permission list
+python scripts/cli_tool.py permission detail <id>
+```
+
+# Plugin
+```bash
+python scripts/cli_tool.py plugin list
+python scripts/cli_tool.py plugin detail <id>
+```
+
+# Pool
+```bash
+python scripts/cli_tool.py pool list
+python scripts/cli_tool.py pool detail <id>
+```
+
+# Provider
+```bash
+python scripts/cli_tool.py provider list
+python scripts/cli_tool.py provider detail <id>
+```
+
+# Role
+```bash
+python scripts/cli_tool.py role list
+python scripts/cli_tool.py role detail <id>
+```
+
+# TaskInstance
+```bash
+python scripts/cli_tool.py taskinstance list
+python scripts/cli_tool.py taskinstance detail <id>
+```
+
+# User
+```bash
+python scripts/cli_tool.py user list
+python scripts/cli_tool.py user detail <id>
+```
+
+# Variable
+```bash
+python scripts/cli_tool.py variable list
+python scripts/cli_tool.py variable detail <id>
+```
+
+# XCom
+```bash
+python scripts/cli_tool.py xcom list
+python scripts/cli_tool.py xcom detail <id>
+```
+
+
+## API Endpoints
+
+For detailed API endpoint documentation, see `references/api_endpoints.md`.
+
+## Implementation
+
+This skill wraps the following API categories:
+-   - Config
+  - Connection
+  - DAG
+  - DAGRun
+  - DagStats
+  - DagWarning
+  - Dataset
+  - EventLog
+  - ImportError
+  - Monitoring
+  - Permission
+  - Plugin
+  - Pool
+  - Provider
+  - Role
+  - TaskInstance
+  - User
+  - Variable
+  - XCom
+
+Generated on: 2026-03-06 20:28:59

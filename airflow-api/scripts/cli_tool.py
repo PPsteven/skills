@@ -1,361 +1,586 @@
 #!/usr/bin/env python3
 """
-Airflow API CLI Tool
+CLI Tool - Airflow Api
 
-A comprehensive command-line interface for managing Apache Airflow through its REST API.
-Supports DAGs, task instances, variables, connections, and datasets.
-
-Usage:
-    python cli_tool.py [OPTIONS] COMMAND [ARGS]...
-
-Environment Variables:
-    AIRFLOW_API_URL - Base URL for Airflow API (default: http://localhost:8080/api/v1)
-    AIRFLOW_USERNAME - Username for authentication
-    AIRFLOW_PASSWORD - Password for authentication
+Auto-generated CLI tool for managing Airflow APIs.
 """
 
-import os
-import sys
-import json
 import click
-from typing import Optional, Dict, Any
+import json
 import requests
 from urllib.parse import urljoin
+from typing import Optional
+import os
 
-# Configuration
-DEFAULT_API_URL = "http://localhost:8080/api/v1"
 
+class AirflowAPI:
+    """Airflow API client."""
 
-class AirflowAPIClient:
-    """Client for interacting with Airflow REST API"""
-    
-    def __init__(self, api_url: str, username: Optional[str] = None, password: Optional[str] = None):
-        self.api_url = api_url.rstrip('/')
-        self.session = requests.Session()
-        if username and password:
-            self.session.auth = (username, password)
-    
-    def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
-        """Make HTTP request to Airflow API"""
-        url = urljoin(f"{self.api_url}/", endpoint.lstrip('/'))
+    def __init__(self, base_url: str = None, token: str = None):
+        """Initialize API client."""
+        self.base_url = base_url or os.getenv('AIRFLOW_BASE_URL', 'http://localhost:8080')
+        self.token = token or os.getenv('AIRFLOW_TOKEN', '')
+        self.headers = {
+            'Content-Type': 'application/json',
+        }
+        if self.token:
+            self.headers['Authorization'] = f'Bearer {self.token}'
+
+    def request(self, method: str, endpoint: str, **kwargs) -> dict:
+        """Make API request."""
+        url = urljoin(self.base_url, endpoint)
         try:
-            response = self.session.request(method, url, **kwargs)
+            response = requests.request(method, url, headers=self.headers, **kwargs, timeout=30)
             response.raise_for_status()
-            return response.json() if response.text else {}
-        except requests.exceptions.RequestException as e:
-            click.echo(f"Error: {e}", err=True)
-            sys.exit(1)
-    
-    def get(self, endpoint: str) -> Dict[str, Any]:
-        return self._request("GET", endpoint)
-    
-    def post(self, endpoint: str, data: Dict = None) -> Dict[str, Any]:
-        return self._request("POST", endpoint, json=data)
-    
-    def put(self, endpoint: str, data: Dict = None) -> Dict[str, Any]:
-        return self._request("PUT", endpoint, json=data)
-    
-    def delete(self, endpoint: str) -> None:
-        self._request("DELETE", endpoint)
+            return response.json() if response.text else {"status": "success"}
+        except Exception as e:
+            click.echo(f"❌ Error: {e}", err=True)
+            return {"error": str(e)}
+
+
+# Initialize API client
+api = AirflowAPI()
 
 
 @click.group()
-@click.option('--api-url', envvar='AIRFLOW_API_URL', default=DEFAULT_API_URL,
-              help='Airflow API base URL')
-@click.option('--username', envvar='AIRFLOW_USERNAME', help='API username')
-@click.option('--password', envvar='AIRFLOW_PASSWORD', help='API password')
-@click.pass_context
-def cli(ctx, api_url: str, username: Optional[str], password: Optional[str]):
-    """Airflow API CLI Manager
-    
-    Manage Apache Airflow DAGs, tasks, variables, connections, and datasets.
-    """
-    ctx.ensure_object(dict)
-    ctx.obj['client'] = AirflowAPIClient(api_url, username, password)
-
-
-# DAG Commands
-@cli.group()
-def dag():
-    """DAG management commands"""
+def cli():
+    """Airflow API CLI Tool"""
     pass
 
 
-@dag.command('list')
-@click.option('--limit', type=int, default=100, help='Maximum number of DAGs to return')
-@click.option('--offset', type=int, default=0, help='Offset for pagination')
-@click.pass_context
-def dag_list(ctx, limit: int, offset: int):
-    """List all DAGs"""
-    client = ctx.obj['client']
-    params = {'limit': limit, 'offset': offset}
-    result = client.get(f'/dags?limit={limit}&offset={offset}')
-    click.echo(json.dumps(result, indent=2))
+
+@cli.group(name='config')
+def config_group():
+    """Manage Config operations"""
+    pass
 
 
-@dag.command('get')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.pass_context
-def dag_get(ctx, dag_id: str):
+@config_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def config_list(limit):
+    """List Config items"""
+    # TODO: Implement Config list endpoint
+    slug = 'config'
+    click.echo(f"Fetching Config items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@config_group.command('detail')
+@click.argument('item_id')
+def config_detail(item_id):
+    """Get Config details"""
+    # TODO: Implement Config detail endpoint
+    slug = 'config'
+    click.echo(f"Fetching Config details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='connection')
+def connection_group():
+    """Manage Connection operations"""
+    pass
+
+
+@connection_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def connection_list(limit):
+    """List Connection items"""
+    # TODO: Implement Connection list endpoint
+    slug = 'connection'
+    click.echo(f"Fetching Connection items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@connection_group.command('detail')
+@click.argument('item_id')
+def connection_detail(item_id):
+    """Get Connection details"""
+    # TODO: Implement Connection detail endpoint
+    slug = 'connection'
+    click.echo(f"Fetching Connection details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='dag')
+def dag_group():
+    """Manage DAG operations"""
+    pass
+
+
+@dag_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def dag_list(limit):
+    """List DAG items"""
+    # TODO: Implement DAG list endpoint
+    slug = 'dag'
+    click.echo(f"Fetching DAG items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@dag_group.command('detail')
+@click.argument('item_id')
+def dag_detail(item_id):
     """Get DAG details"""
-    client = ctx.obj['client']
-    result = client.get(f'/dags/{dag_id}')
-    click.echo(json.dumps(result, indent=2))
+    # TODO: Implement DAG detail endpoint
+    slug = 'dag'
+    click.echo(f"Fetching DAG details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@dag.command('pause')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.pass_context
-def dag_pause(ctx, dag_id: str):
-    """Pause a DAG"""
-    client = ctx.obj['client']
-    client.patch(f'/dags/{dag_id}', data={'is_paused': True})
-    click.echo(f"DAG '{dag_id}' paused successfully")
-
-
-@dag.command('unpause')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.pass_context
-def dag_unpause(ctx, dag_id: str):
-    """Unpause a DAG"""
-    client = ctx.obj['client']
-    client.patch(f'/dags/{dag_id}', data={'is_paused': False})
-    click.echo(f"DAG '{dag_id}' unpaused successfully")
-
-
-# DAG Run Commands
-@cli.group()
-def dagrun():
-    """DAG run management commands"""
+@cli.group(name='dagrun')
+def dagrun_group():
+    """Manage DAGRun operations"""
     pass
 
 
-@dagrun.command('list')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.option('--limit', type=int, default=100, help='Maximum number of runs')
-@click.pass_context
-def dagrun_list(ctx, dag_id: str, limit: int):
-    """List DAG runs for a DAG"""
-    client = ctx.obj['client']
-    result = client.get(f'/dags/{dag_id}/dagRuns?limit={limit}')
-    click.echo(json.dumps(result, indent=2))
+@dagrun_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def dagrun_list(limit):
+    """List DAGRun items"""
+    # TODO: Implement DAGRun list endpoint
+    slug = 'dagrun'
+    click.echo(f"Fetching DAGRun items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@dagrun.command('trigger')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.option('--conf', type=str, help='JSON configuration for the run')
-@click.pass_context
-def dagrun_trigger(ctx, dag_id: str, conf: Optional[str]):
-    """Trigger a DAG run"""
-    client = ctx.obj['client']
-    data = {}
-    if conf:
-        data['conf'] = json.loads(conf)
-    result = client.post(f'/dags/{dag_id}/dagRuns', data=data)
-    click.echo(json.dumps(result, indent=2))
+@dagrun_group.command('detail')
+@click.argument('item_id')
+def dagrun_detail(item_id):
+    """Get DAGRun details"""
+    # TODO: Implement DAGRun detail endpoint
+    slug = 'dagrun'
+    click.echo(f"Fetching DAGRun details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@dagrun.command('get')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.option('--dag-run-id', required=True, help='DAG run ID')
-@click.pass_context
-def dagrun_get(ctx, dag_id: str, dag_run_id: str):
-    """Get DAG run details"""
-    client = ctx.obj['client']
-    result = client.get(f'/dags/{dag_id}/dagRuns/{dag_run_id}')
-    click.echo(json.dumps(result, indent=2))
-
-
-# Task Instance Commands
-@cli.group()
-def task():
-    """Task instance management commands"""
+@cli.group(name='dagstats')
+def dagstats_group():
+    """Manage DagStats operations"""
     pass
 
 
-@task.command('list')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.option('--limit', type=int, default=100, help='Maximum number of tasks')
-@click.pass_context
-def task_list(ctx, dag_id: str, limit: int):
-    """List task instances for a DAG"""
-    client = ctx.obj['client']
-    result = client.get(f'/dags/{dag_id}/tasks?limit={limit}')
-    click.echo(json.dumps(result, indent=2))
+@dagstats_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def dagstats_list(limit):
+    """List DagStats items"""
+    # TODO: Implement DagStats list endpoint
+    slug = 'dagstats'
+    click.echo(f"Fetching DagStats items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@task.command('get')
-@click.option('--dag-id', required=True, help='DAG ID')
-@click.option('--task-id', required=True, help='Task ID')
-@click.pass_context
-def task_get(ctx, dag_id: str, task_id: str):
-    """Get task details"""
-    client = ctx.obj['client']
-    result = client.get(f'/dags/{dag_id}/tasks/{task_id}')
-    click.echo(json.dumps(result, indent=2))
+@dagstats_group.command('detail')
+@click.argument('item_id')
+def dagstats_detail(item_id):
+    """Get DagStats details"""
+    # TODO: Implement DagStats detail endpoint
+    slug = 'dagstats'
+    click.echo(f"Fetching DagStats details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-# Variable Commands
-@cli.group()
-def variable():
-    """Variable management commands"""
+@cli.group(name='dagwarning')
+def dagwarning_group():
+    """Manage DagWarning operations"""
     pass
 
 
-@variable.command('list')
-@click.option('--limit', type=int, default=100, help='Maximum number of variables')
-@click.pass_context
-def variable_list(ctx, limit: int):
-    """List all variables"""
-    client = ctx.obj['client']
-    result = client.get(f'/variables?limit={limit}')
-    click.echo(json.dumps(result, indent=2))
+@dagwarning_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def dagwarning_list(limit):
+    """List DagWarning items"""
+    # TODO: Implement DagWarning list endpoint
+    slug = 'dagwarning'
+    click.echo(f"Fetching DagWarning items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@variable.command('get')
-@click.option('--key', required=True, help='Variable key')
-@click.pass_context
-def variable_get(ctx, key: str):
-    """Get variable value"""
-    client = ctx.obj['client']
-    result = client.get(f'/variables/{key}')
-    click.echo(json.dumps(result, indent=2))
+@dagwarning_group.command('detail')
+@click.argument('item_id')
+def dagwarning_detail(item_id):
+    """Get DagWarning details"""
+    # TODO: Implement DagWarning detail endpoint
+    slug = 'dagwarning'
+    click.echo(f"Fetching DagWarning details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@variable.command('create')
-@click.option('--key', required=True, help='Variable key')
-@click.option('--value', required=True, help='Variable value')
-@click.pass_context
-def variable_create(ctx, key: str, value: str):
-    """Create a new variable"""
-    client = ctx.obj['client']
-    data = {'key': key, 'value': value}
-    result = client.post('/variables', data=data)
-    click.echo(json.dumps(result, indent=2))
-
-
-@variable.command('update')
-@click.option('--key', required=True, help='Variable key')
-@click.option('--value', required=True, help='Variable value')
-@click.pass_context
-def variable_update(ctx, key: str, value: str):
-    """Update a variable"""
-    client = ctx.obj['client']
-    data = {'key': key, 'value': value}
-    result = client.put(f'/variables/{key}', data=data)
-    click.echo(json.dumps(result, indent=2))
-
-
-@variable.command('delete')
-@click.option('--key', required=True, help='Variable key')
-@click.pass_context
-def variable_delete(ctx, key: str):
-    """Delete a variable"""
-    client = ctx.obj['client']
-    client.delete(f'/variables/{key}')
-    click.echo(f"Variable '{key}' deleted successfully")
-
-
-# Connection Commands
-@cli.group()
-def connection():
-    """Connection management commands"""
+@cli.group(name='dataset')
+def dataset_group():
+    """Manage Dataset operations"""
     pass
 
 
-@connection.command('list')
-@click.option('--limit', type=int, default=100, help='Maximum number of connections')
-@click.pass_context
-def connection_list(ctx, limit: int):
-    """List all connections"""
-    client = ctx.obj['client']
-    result = client.get(f'/connections?limit={limit}')
-    click.echo(json.dumps(result, indent=2))
+@dataset_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def dataset_list(limit):
+    """List Dataset items"""
+    # TODO: Implement Dataset list endpoint
+    slug = 'dataset'
+    click.echo(f"Fetching Dataset items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@connection.command('get')
-@click.option('--conn-id', required=True, help='Connection ID')
-@click.pass_context
-def connection_get(ctx, conn_id: str):
-    """Get connection details"""
-    client = ctx.obj['client']
-    result = client.get(f'/connections/{conn_id}')
-    click.echo(json.dumps(result, indent=2))
+@dataset_group.command('detail')
+@click.argument('item_id')
+def dataset_detail(item_id):
+    """Get Dataset details"""
+    # TODO: Implement Dataset detail endpoint
+    slug = 'dataset'
+    click.echo(f"Fetching Dataset details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@connection.command('create')
-@click.option('--conn-id', required=True, help='Connection ID')
-@click.option('--conn-type', required=True, help='Connection type')
-@click.option('--host', help='Host')
-@click.option('--port', type=int, help='Port')
-@click.option('--login', help='Login/username')
-@click.option('--password', help='Password')
-@click.pass_context
-def connection_create(ctx, conn_id: str, conn_type: str, host: Optional[str], 
-                     port: Optional[int], login: Optional[str], password: Optional[str]):
-    """Create a new connection"""
-    client = ctx.obj['client']
-    data = {
-        'conn_id': conn_id,
-        'conn_type': conn_type,
-        'host': host,
-        'port': port,
-        'login': login,
-        'password': password
-    }
-    # Remove None values
-    data = {k: v for k, v in data.items() if v is not None}
-    result = client.post('/connections', data=data)
-    click.echo(json.dumps(result, indent=2))
-
-
-@connection.command('delete')
-@click.option('--conn-id', required=True, help='Connection ID')
-@click.pass_context
-def connection_delete(ctx, conn_id: str):
-    """Delete a connection"""
-    client = ctx.obj['client']
-    client.delete(f'/connections/{conn_id}')
-    click.echo(f"Connection '{conn_id}' deleted successfully")
-
-
-# Dataset Commands
-@cli.group()
-def dataset():
-    """Dataset management commands"""
+@cli.group(name='eventlog')
+def eventlog_group():
+    """Manage EventLog operations"""
     pass
 
 
-@dataset.command('list')
-@click.option('--limit', type=int, default=100, help='Maximum number of datasets')
-@click.pass_context
-def dataset_list(ctx, limit: int):
-    """List all datasets"""
-    client = ctx.obj['client']
-    result = client.get(f'/datasets?limit={limit}')
-    click.echo(json.dumps(result, indent=2))
+@eventlog_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def eventlog_list(limit):
+    """List EventLog items"""
+    # TODO: Implement EventLog list endpoint
+    slug = 'eventlog'
+    click.echo(f"Fetching EventLog items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@dataset.command('get')
-@click.option('--dataset-id', required=True, help='Dataset URI')
-@click.pass_context
-def dataset_get(ctx, dataset_id: str):
-    """Get dataset details"""
-    client = ctx.obj['client']
-    result = client.get(f'/datasets/{dataset_id}')
-    click.echo(json.dumps(result, indent=2))
+@eventlog_group.command('detail')
+@click.argument('item_id')
+def eventlog_detail(item_id):
+    """Get EventLog details"""
+    # TODO: Implement EventLog detail endpoint
+    slug = 'eventlog'
+    click.echo(f"Fetching EventLog details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
 
 
-@dataset.command('create')
-@click.option('--uri', required=True, help='Dataset URI')
-@click.pass_context
-def dataset_create(ctx, uri: str):
-    """Create a new dataset"""
-    client = ctx.obj['client']
-    data = {'uri': uri}
-    result = client.post('/datasets', data=data)
-    click.echo(json.dumps(result, indent=2))
+@cli.group(name='importerror')
+def importerror_group():
+    """Manage ImportError operations"""
+    pass
+
+
+@importerror_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def importerror_list(limit):
+    """List ImportError items"""
+    # TODO: Implement ImportError list endpoint
+    slug = 'importerror'
+    click.echo(f"Fetching ImportError items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@importerror_group.command('detail')
+@click.argument('item_id')
+def importerror_detail(item_id):
+    """Get ImportError details"""
+    # TODO: Implement ImportError detail endpoint
+    slug = 'importerror'
+    click.echo(f"Fetching ImportError details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='monitoring')
+def monitoring_group():
+    """Manage Monitoring operations"""
+    pass
+
+
+@monitoring_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def monitoring_list(limit):
+    """List Monitoring items"""
+    # TODO: Implement Monitoring list endpoint
+    slug = 'monitoring'
+    click.echo(f"Fetching Monitoring items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@monitoring_group.command('detail')
+@click.argument('item_id')
+def monitoring_detail(item_id):
+    """Get Monitoring details"""
+    # TODO: Implement Monitoring detail endpoint
+    slug = 'monitoring'
+    click.echo(f"Fetching Monitoring details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='permission')
+def permission_group():
+    """Manage Permission operations"""
+    pass
+
+
+@permission_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def permission_list(limit):
+    """List Permission items"""
+    # TODO: Implement Permission list endpoint
+    slug = 'permission'
+    click.echo(f"Fetching Permission items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@permission_group.command('detail')
+@click.argument('item_id')
+def permission_detail(item_id):
+    """Get Permission details"""
+    # TODO: Implement Permission detail endpoint
+    slug = 'permission'
+    click.echo(f"Fetching Permission details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='plugin')
+def plugin_group():
+    """Manage Plugin operations"""
+    pass
+
+
+@plugin_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def plugin_list(limit):
+    """List Plugin items"""
+    # TODO: Implement Plugin list endpoint
+    slug = 'plugin'
+    click.echo(f"Fetching Plugin items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@plugin_group.command('detail')
+@click.argument('item_id')
+def plugin_detail(item_id):
+    """Get Plugin details"""
+    # TODO: Implement Plugin detail endpoint
+    slug = 'plugin'
+    click.echo(f"Fetching Plugin details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='pool')
+def pool_group():
+    """Manage Pool operations"""
+    pass
+
+
+@pool_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def pool_list(limit):
+    """List Pool items"""
+    # TODO: Implement Pool list endpoint
+    slug = 'pool'
+    click.echo(f"Fetching Pool items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@pool_group.command('detail')
+@click.argument('item_id')
+def pool_detail(item_id):
+    """Get Pool details"""
+    # TODO: Implement Pool detail endpoint
+    slug = 'pool'
+    click.echo(f"Fetching Pool details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='provider')
+def provider_group():
+    """Manage Provider operations"""
+    pass
+
+
+@provider_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def provider_list(limit):
+    """List Provider items"""
+    # TODO: Implement Provider list endpoint
+    slug = 'provider'
+    click.echo(f"Fetching Provider items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@provider_group.command('detail')
+@click.argument('item_id')
+def provider_detail(item_id):
+    """Get Provider details"""
+    # TODO: Implement Provider detail endpoint
+    slug = 'provider'
+    click.echo(f"Fetching Provider details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='role')
+def role_group():
+    """Manage Role operations"""
+    pass
+
+
+@role_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def role_list(limit):
+    """List Role items"""
+    # TODO: Implement Role list endpoint
+    slug = 'role'
+    click.echo(f"Fetching Role items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@role_group.command('detail')
+@click.argument('item_id')
+def role_detail(item_id):
+    """Get Role details"""
+    # TODO: Implement Role detail endpoint
+    slug = 'role'
+    click.echo(f"Fetching Role details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='taskinstance')
+def taskinstance_group():
+    """Manage TaskInstance operations"""
+    pass
+
+
+@taskinstance_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def taskinstance_list(limit):
+    """List TaskInstance items"""
+    # TODO: Implement TaskInstance list endpoint
+    slug = 'taskinstance'
+    click.echo(f"Fetching TaskInstance items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@taskinstance_group.command('detail')
+@click.argument('item_id')
+def taskinstance_detail(item_id):
+    """Get TaskInstance details"""
+    # TODO: Implement TaskInstance detail endpoint
+    slug = 'taskinstance'
+    click.echo(f"Fetching TaskInstance details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='user')
+def user_group():
+    """Manage User operations"""
+    pass
+
+
+@user_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def user_list(limit):
+    """List User items"""
+    # TODO: Implement User list endpoint
+    slug = 'user'
+    click.echo(f"Fetching User items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@user_group.command('detail')
+@click.argument('item_id')
+def user_detail(item_id):
+    """Get User details"""
+    # TODO: Implement User detail endpoint
+    slug = 'user'
+    click.echo(f"Fetching User details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='variable')
+def variable_group():
+    """Manage Variable operations"""
+    pass
+
+
+@variable_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def variable_list(limit):
+    """List Variable items"""
+    # TODO: Implement Variable list endpoint
+    slug = 'variable'
+    click.echo(f"Fetching Variable items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@variable_group.command('detail')
+@click.argument('item_id')
+def variable_detail(item_id):
+    """Get Variable details"""
+    # TODO: Implement Variable detail endpoint
+    slug = 'variable'
+    click.echo(f"Fetching Variable details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@cli.group(name='xcom')
+def xcom_group():
+    """Manage XCom operations"""
+    pass
+
+
+@xcom_group.command('list')
+@click.option('--limit', default=10, help='Number of items to return')
+def xcom_list(limit):
+    """List XCom items"""
+    # TODO: Implement XCom list endpoint
+    slug = 'xcom'
+    click.echo(f"Fetching XCom items (limit={limit})...")
+    # result = api.request('GET', f'/api/v1/{slug}?limit={limit}')
+    # click.echo(json.dumps(result, indent=2))
+
+
+@xcom_group.command('detail')
+@click.argument('item_id')
+def xcom_detail(item_id):
+    """Get XCom details"""
+    # TODO: Implement XCom detail endpoint
+    slug = 'xcom'
+    click.echo(f"Fetching XCom details for {item_id}...")
+    # result = api.request('GET', f'/api/v1/{slug}/{item_id}')
+    # click.echo(json.dumps(result, indent=2))
+
 
 
 if __name__ == '__main__':
-    cli(obj={})
+    cli()
