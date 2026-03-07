@@ -38,11 +38,11 @@ class OpenAPIParser:
         """
         try:
             if self.spec_source.startswith('http://') or self.spec_source.startswith('https://'):
-                print(f"📥 Fetching from: {self.spec_source}")
+                print(f"📥 Fetching from: {self.spec_source}", file=sys.stderr)
                 with urlopen(self.spec_source, timeout=10) as response:
                     self.spec = json.loads(response.read().decode('utf-8'))
             else:
-                print(f"📂 Loading from: {self.spec_source}")
+                print(f"📂 Loading from: {self.spec_source}", file=sys.stderr)
                 with open(self.spec_source, 'r') as f:
                     self.spec = json.load(f)
 
@@ -52,14 +52,14 @@ class OpenAPIParser:
             elif 'swagger' in self.spec:
                 self.version = 'Swagger 2.0'
             else:
-                print("❌ Could not determine OpenAPI/Swagger version")
+                print("❌ Could not determine OpenAPI/Swagger version", file=sys.stderr)
                 return False
 
-            print(f"✅ Loaded {self.version} specification")
+            print(f"✅ Loaded {self.version} specification", file=sys.stderr)
             return True
 
         except Exception as e:
-            print(f"❌ Error loading specification: {e}")
+            print(f"❌ Error loading specification: {e}", file=sys.stderr)
             return False
 
     def extract_categories(self) -> Dict[str, List[Dict[str, Any]]]:

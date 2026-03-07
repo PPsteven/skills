@@ -25,13 +25,11 @@ def prompt_category_selection(parser: OpenAPIParser) -> List[str]:
     """
     Display categories and prompt user for selection.
 
-    If stdin is not a TTY (non-interactive mode), selects all categories.
+    Always requires user input to decide which categories to include.
 
     Returns:
         List of selected category names
     """
-    import sys
-
     categories = parser.get_all_categories_list()
 
     if not categories:
@@ -48,26 +46,27 @@ def prompt_category_selection(parser: OpenAPIParser) -> List[str]:
         print(f"{i}. {category} ({endpoint_count} endpoints)")
 
     print("\n" + "-"*60)
-
-    # Check if running in interactive mode
-    if not sys.stdin.isatty():
-        print("⚠️  Non-interactive mode detected (no TTY)")
-        print("Selecting all categories by default...\n")
-        print(f"✅ Selected {len(categories)} categories (all):")
-        for cat in categories:
-            print(f"   • {cat}")
-        return categories
-
     print("Enter the numbers of categories to include (comma-separated)")
     print("Example: 1,2,4  (to select 1st, 2nd, and 4th categories)")
+    print("Or type 'all' to select all categories")
     print("-"*60 + "\n")
 
     while True:
         try:
-            user_input = input("👉 Your selection: ").strip()
+            user_input = input("👉 Your selection: ").strip().lower()
 
             if not user_input:
-                print("❌ Please enter at least one category number")
+                print("❌ Please enter at least one category number or 'all'")
+                continue
+
+            # Handle 'all' shortcut
+            if user_input == 'all':
+                print(f"\n✅ Selected {len(categories)} categories (all):")
+                for cat in categories:
+                    print(f"   • {cat}")
+                confirm = input("\n👉 Confirm selection? (yes/no): ").strip().lower()
+                if confirm in ['yes', 'y']:
+                    return categories
                 continue
 
             # Parse user input
@@ -94,7 +93,7 @@ def prompt_category_selection(parser: OpenAPIParser) -> List[str]:
                 return selected
 
         except ValueError:
-            print("❌ Invalid input. Please enter numbers separated by commas.")
+            print("❌ Invalid input. Please enter numbers separated by commas, or type 'all'.")
             continue
         except KeyboardInterrupt:
             print("\n\n❌ Cancelled by user")
@@ -108,19 +107,11 @@ def prompt_skill_name() -> str:
     Returns:
         Skill name in kebab-case format
     """
-    import sys
-
     print("\n" + "="*60)
     print("💾 Generated Skill Name")
     print("="*60 + "\n")
     print("Enter the name for the generated skill.")
     print("(Use lowercase with hyphens, e.g., 'airflow-api', 'my-api-tool')\n")
-
-    # Check if running in interactive mode
-    if not sys.stdin.isatty():
-        default_name = "generated-api-skill"
-        print(f"⚠️  Non-interactive mode: using default name: {default_name}")
-        return default_name
 
     while True:
         name = input("👉 Skill name: ").strip().lower()
@@ -151,8 +142,6 @@ def prompt_output_directory() -> str:
     Returns:
         Path to output directory
     """
-    import sys
-
     print("\n" + "="*60)
     print("📁 Output Directory")
     print("="*60 + "\n")
@@ -160,20 +149,6 @@ def prompt_output_directory() -> str:
     print(f"Default: /Users/ppsteven/projects/skills\n")
 
     default_dir = "/Users/ppsteven/projects/skills"
-
-    # Check if running in interactive mode
-    if not sys.stdin.isatty():
-        output_path = Path(default_dir)
-        if not output_path.exists():
-            try:
-                output_path.mkdir(parents=True)
-                print(f"⚠️  Non-interactive mode: created directory: {default_dir}")
-            except Exception as e:
-                print(f"❌ Error creating directory: {e}")
-                raise
-        else:
-            print(f"⚠️  Non-interactive mode: using directory: {default_dir}")
-        return default_dir
 
     while True:
         output_dir = input("👉 Output directory (or press Enter for default): ").strip()

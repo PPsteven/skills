@@ -1,204 +1,185 @@
 ---
 name: swagger2skill
-description: Generate reusable skills from Swagger/OpenAPI specifications. Use when needing to create a skill that wraps multiple API endpoints from an OpenAPI definition. Extracts API categories, lets users select which ones to implement, then generates a new skill with CLI tools for the selected APIs.
-context: fork
-agent: general-purpose
-argument-hint: "[openapi-url-or-path]"
+description: Generate reusable Claude skills from Swagger/OpenAPI specifications. Automatically fetches and parses OpenAPI specs, extracts API categories, prompts for interactive selection, then generates complete skills with CLI tools and documentation.
 ---
 
 # Swagger to Skill Generator
 
-Generate production-ready skills directly from Swagger/OpenAPI specifications. This skill streamlines API documentation into reusable Claude skills with CLI tools.
+Generate production-ready Claude skills from Swagger/OpenAPI specifications using an automated Python workflow.
 
-## Purpose
+## How to Use
 
-When you have an OpenAPI/Swagger definition and want to create a Claude skill that wraps those APIs, this skill automates the entire process:
+To generate a skill from an OpenAPI specification, run the main script:
 
-1. **Parse** the OpenAPI specification (from URL or local file)
-2. **Extract and categorize** all API endpoints
-3. **Let users choose** which categories to implement
-4. **Generate** a complete skill with CLI tools for selected APIs
-5. **Document** unsupported categories in references
-
-This eliminates manual API endpoint transcription and ensures consistency across generated skills.
-
-## How to Use This Skill
-
-### Basic Usage
-
-Provide either an OpenAPI URL or file path:
-
-```
-/swagger2skill https://tmp-airflow.momenta.works/api/v1/openapi.json
-/swagger2skill ~/my-api-openapi.json
+```bash
+python scripts/swagger2skill.py <openapi-url-or-file>
 ```
 
-### Interactive Selection
+**Examples:**
 
-After processing the OpenAPI file, you'll see:
-
-1. **Available Categories** - List of all API categories found (e.g., DAG, Variable, Task, Connection)
-2. **Selection Prompt** - Choose which categories to include in the generated skill
-   - **Interactive mode (TTY)**: Shows interactive menu for manual selection
-   - **Non-interactive mode (fork/pipe)**: Automatically selects all categories as default
-3. **Generation** - Creates a new skill directory with:
-   - `SKILL.md` - Complete skill documentation
-   - `scripts/cli_tool.py` - CLI wrapper for selected APIs
-   - `references/api_endpoints.md` - Documentation of implemented endpoints
-   - `references/unsupported_categories.md` - Info about unselected categories (if any exist)
-
-### Output Structure
-
-The generated skill is ready to deploy:
-
-```
-generated-skill-name/
-├── SKILL.md                              # Skill metadata and instructions
-├── scripts/
-│   └── cli_tool.py                       # CLI tool wrapping selected APIs
-├── references/
-│   ├── api_endpoints.md                  # API endpoint documentation
-│   └── unsupported_categories.md         # Unimplemented categories (optional)
-└── assets/
-    └── [optional generated templates]
+From a remote URL:
+```bash
+python scripts/swagger2skill.py https://tmp-airflow.momenta.works/api/v1/openapi.json
 ```
 
-## Implementation Process
+From a local file:
+```bash
+python scripts/swagger2skill.py ./openapi.json
+```
+
+## Interactive Workflow
+
+The script guides you through a straightforward 4-step process:
 
 ### Step 1: Parse OpenAPI Specification
 
-The skill processes the OpenAPI file and extracts:
-- API categories (tags in OpenAPI)
-- Endpoints per category
-- Request parameters and response schemas
-- Authentication requirements
+The script automatically:
+- Fetches the OpenAPI spec from URL or file
+- Extracts all API categories and endpoint counts
+- Displays a summary
 
-**Reference**: See `references/openapi_schema_reference.md` for OpenAPI structure details.
-
-### Step 2: Display Category Selection
-
-Lists all discovered categories with endpoint counts:
-
+**Example output:**
 ```
-Available API Categories (12 total):
+✅ Found 19 API categories:
 
-1. DAG (6 endpoints)
-   - List DAGs
-   - Get DAG details
-   - Trigger DAG
-   - ...
-
-2. Variable (4 endpoints)
-   - List variables
-   - Get variable
-   - ...
-
-3. [other categories...]
+   1. Config (3 endpoints)
+   2. Connection (6 endpoints)
+   3. DAG (12 endpoints)
+   4. DAGRun (9 endpoints)
+   5. Role (5 endpoints)
+   ... and 14 more
 ```
 
-### Step 3: User Selects Categories
+### Step 2: Category Selection
 
-Select categories to implement in the generated skill. Only selected categories will have CLI tools generated.
+The script prompts to choose how to select categories:
 
-**Example**: If you select DAG, Variable, and Task (3 categories), the generated skill will only include those APIs.
+**Option A: All categories**
+- Include every category found in the OpenAPI spec
 
-### Step 4: Generate Skill
+**Option B: Custom selection**
+- Enter specific categories using:
+  - Numbers: `1,3,4,7`
+  - Names: `dag,connection,variable`
+  - Mixed: `1,connection,5`
 
-Creates a new skill directory with:
+### Step 3: Skill Configuration
 
-**SKILL.md Template**: Pre-filled with:
-- Name and description based on selected categories
-- Usage instructions specific to selected endpoints
-- Example commands
+Provide:
+- **Skill name** (kebab-case): `airflow-api`, `my-rest-api`, etc.
+- **Output directory** (default: `/Users/ppsteven/projects/skills/`)
 
-**CLI Tool Script** (`scripts/cli_tool.py`):
-- Click-based CLI with commands for each selected category
-- Request handling and response formatting
-- Error handling and authentication
+### Step 4: Generate
 
-**API Endpoints Documentation** (`references/api_endpoints.md`):
-- All implemented API endpoints
-- Parameters, request/response examples
-- Authentication details
+The script creates a complete skill package with:
+- `SKILL.md` - Skill metadata and documentation
+- `scripts/cli_tool.py` - Click-based CLI wrapper for selected APIs
+- `references/api_endpoints.md` - Complete API endpoint reference
+- `references/unsupported_categories.md` - Unimplemented categories (if any)
 
-**Unsupported Categories Documentation** (`references/unsupported_categories.md`):
-- List of API categories NOT included
-- Brief description of each category
-- Reference for future expansion
+## How It Works
 
-### Step 5: Ready to Deploy
+**All logic is in Python scripts** — nothing is duplicated in Claude Code:
 
-The generated skill is ready to:
-- Commit to version control
-- Symlink to `~/.claude/skills/`
-- Share with team members
-- Extend with additional functionality
+1. **Fetch** - Retrieves OpenAPI spec from URL or local file
+2. **Parse** - Extracts API categories, endpoints, and metadata
+3. **Display** - Shows available categories with endpoint counts
+4. **Select** - User chooses all categories or custom subset
+5. **Generate** - Creates skill package with:
+   - Click CLI tool wrapper for selected APIs
+   - Full API documentation and references
+   - Deployment-ready structure
 
-## Workflow Example
-
-**Scenario**: Create a skill for Airflow DAG management
+## Generated Skill Structure
 
 ```
-User Input:
-/swagger2skill https://tmp-airflow.momenta.works/api/v1/openapi.json
-
-Process:
-1. Fetch and parse OpenAPI JSON
-2. Find 12 categories: DAG, Variable, Task, Connection, ...
-3. Display category list
-4. User selects: DAG, Variable
-5. Generate skill:
-   - airflow-api/
-     ├── SKILL.md (documenting DAG and Variable management)
-     ├── scripts/cli_tool.py (CLI for DAG/Variable operations)
-     ├── references/api_endpoints.md (endpoint details)
-     └── references/unsupported_categories.md (Task, Connection, etc.)
+generated-skill-name/
+├── SKILL.md                       # Skill metadata
+├── scripts/
+│   └── cli_tool.py               # CLI implementation
+├── references/
+│   ├── api_endpoints.md          # API documentation
+│   └── unsupported_categories.md # Future expansion reference
 ```
 
 ## Key Features
 
-✅ **Automatic Extraction** - Parses OpenAPI specs without manual transcription
-✅ **Category-Based Selection** - Users choose which APIs to include
-✅ **CLI Tool Generation** - Auto-generates working Click-based CLI
-✅ **Selective Documentation** - References focus only on implemented endpoints
-✅ **Deployment Ready** - Generated skill follows best practices for Claude skills
-✅ **Extensible** - Users can modify generated skill and add custom features
+✅ **Complete automation** - All parsing and extraction in Python
+✅ **Interactive selection** - Simple prompts, flexible category input
+✅ **Production-ready** - Generated skills ready to use immediately
+✅ **Click CLI generation** - Fully functional command-line tool
+✅ **Comprehensive documentation** - API references and implementation guides
 
-## References
-
-- `references/openapi_schema_reference.md` - OpenAPI 3.0 specification structure
-- `references/generated_skill_template.md` - Example of generated skill output
-- `references/cli_tool_example.md` - CLI tool code example
-
-## Implementation Details
-
-### Scripts Used
-
-- `scripts/openapi_parser.py` - Parses OpenAPI and extracts categories/endpoints
-- `scripts/skill_generator.py` - Generates skill directory structure and files
-- `scripts/cli_generator.py` - Creates Click-based CLI tool code
-
-### Supported OpenAPI Versions
+## Supported Formats
 
 - OpenAPI 3.0.x
-- Swagger 2.0 (converted to OpenAPI 3.0 internally)
+- Swagger 2.0
 
-### Limitations
+## Script Dependencies
 
-- Binary/file upload endpoints are documented but not wrapped in CLI
-- WebSocket endpoints are noted but not included in CLI
-- Complex nested schemas may need manual refinement in generated code
+Located in `scripts/` directory:
+- `openapi_parser.py` - Parses OpenAPI specs and extracts categories
+- `skill_generator.py` - Generates skill files and directory structure
+
+Both are included and automatically used by the main script.
+
+## Example Session
+
+```bash
+$ python scripts/swagger2skill.py https://tmp-airflow.momenta.works/api/v1/openapi.json
+
+🚀 Swagger to Skill Generator
+============================================================
+
+📦 Using OpenAPI source: https://tmp-airflow.momenta.works/api/v1/openapi.json
+
+============================================================
+📖 Parsing OpenAPI Specification
+============================================================
+
+✅ Found 19 API categories:
+
+   1. Config (3 endpoints)
+   2. Connection (6 endpoints)
+   3. DAG (12 endpoints)
+   ...
+
+============================================================
+🎯 Category Selection
+============================================================
+
+How would you like to select API categories?
+
+👉 Enter 'all' or 'custom': all
+
+✅ Selected all 19 categories
+
+============================================================
+💾 Skill Details
+============================================================
+
+👉 Skill name: airflow-api
+
+👉 Output directory (default: /Users/ppsteven/projects/skills):
+
+============================================================
+⚙️  Generating Skill
+============================================================
+
+✅ Skill Generation Complete!
+
+📍 Skill location: /Users/ppsteven/projects/skills/airflow-api
+
+📋 Generated Files:
+   • SKILL.md
+   • scripts/cli_tool.py
+   • references/api_endpoints.md
+```
 
 ## Troubleshooting
 
-**Issue**: "Invalid OpenAPI specification"
-- Verify URL is accessible or file path is correct
-- Check OpenAPI version (3.0.x or 2.0 supported)
-
-**Issue**: "No categories found"
-- OpenAPI may lack proper tagging structure
-- Check if endpoints use `tags` field for categorization
-
-**Issue**: "Generated CLI tool not working"
-- Review and adjust authentication setup in `scripts/cli_tool.py`
-- Test individual endpoints manually first
+| Issue | Solution |
+|-------|----------|
+| "Invalid OpenAPI specification" | Verify URL is accessible or file path exists |
+| "No categories found" | Check if endpoints use `tags` field for categorization in the OpenAPI spec |
+| "Connection refused" | For URLs, verify network access; try a local file path as alternative |
