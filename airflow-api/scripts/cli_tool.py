@@ -11,25 +11,45 @@ import requests
 from urllib.parse import urljoin
 from typing import Optional
 import os
+from requests.auth import HTTPBasicAuth
 
 
 class AirflowAPI:
     """Airflow API client."""
 
-    def __init__(self, base_url: str = None, token: str = None):
-        """Initialize API client."""
+    def __init__(self, base_url: str = None, username: str = None, password: str = None, token: str = None):
+        """Initialize API client.
+
+        Supports two authentication methods:
+        1. Username + Password (HTTP Basic Auth)
+        2. Token (Bearer Token)
+        """
         self.base_url = base_url or os.getenv('AIRFLOW_BASE_URL', 'http://localhost:8080')
+        self.username = username or os.getenv('AIRFLOW_USERNAME', '')
+        self.password = password or os.getenv('AIRFLOW_PASSWORD', '')
         self.token = token or os.getenv('AIRFLOW_TOKEN', '')
+
         self.headers = {
             'Content-Type': 'application/json',
         }
-        if self.token:
+
+        # Set up authentication
+        self.auth = None
+        if self.username and self.password:
+            # Use HTTP Basic Auth (username + password)
+            self.auth = HTTPBasicAuth(self.username, self.password)
+        elif self.token:
+            # Use Bearer Token
             self.headers['Authorization'] = f'Bearer {self.token}'
 
     def request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make API request."""
         url = urljoin(self.base_url, endpoint)
         try:
+            # Add auth to kwargs if using Basic Auth
+            if self.auth:
+                kwargs['auth'] = self.auth
+
             response = requests.request(method, url, headers=self.headers, **kwargs, timeout=30)
             response.raise_for_status()
             return response.json() if response.text else {"status": "success"}
@@ -38,7 +58,7 @@ class AirflowAPI:
             return {"error": str(e)}
 
 
-# Initialize API client
+# Initialize API client (will read from environment variables)
 api = AirflowAPI()
 
 

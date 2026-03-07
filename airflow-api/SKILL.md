@@ -31,6 +31,46 @@ This skill provides CLI tools to manage:
 - **Variable**: 5 API endpoints
 - **XCom**: 2 API endpoints
 
+## Configuration
+
+### Required Environment Variables
+
+**Base URL (Required):**
+```bash
+export AIRFLOW_BASE_URL="http://tmp-airflow.momenta.works"
+```
+
+### Authentication Methods
+
+Choose one of the following authentication methods:
+
+#### Option 1: Username + Password (HTTP Basic Auth) - Recommended
+
+```bash
+export AIRFLOW_USERNAME="your_username"
+export AIRFLOW_PASSWORD="your_password"
+```
+
+#### Option 2: Bearer Token
+
+```bash
+export AIRFLOW_TOKEN="your_api_token"
+```
+
+### Complete Setup Example
+
+```bash
+# Configure base URL
+export AIRFLOW_BASE_URL="http://tmp-airflow.momenta.works"
+
+# Option A: Username + Password
+export AIRFLOW_USERNAME="admin"
+export AIRFLOW_PASSWORD="password"
+
+# OR Option B: Token
+# export AIRFLOW_TOKEN="ghp_xxxxxxxxxxxx"
+```
+
 ## Usage
 
 ```bash
