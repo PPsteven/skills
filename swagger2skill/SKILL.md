@@ -222,56 +222,284 @@ Use `AskUserQuestion` to get skill name and output directory.
 
 ---
 
-### Step 5: Generate Skill Files
+### Step 5: Generate CLI Commands Using AI
 
-Now generate the complete skill using the Python generator.
+**IMPORTANT:** This step uses Claude Code to intelligently generate CLI commands for each category in parallel. Do NOT use automated script generation - use AI to write high-quality, contextual code.
 
-**Prepare Data:**
+#### 5.1 Create Tasks for Parallel Generation
 
-1. **Parse the OpenAPI spec again** to get full category details:
-   ```bash
-   python3 swagger2skill/scripts/openapi_parser.py <openapi-url-or-file>
-   ```
+For each selected category, create a task to generate its CLI commands.
 
-2. **Load categories JSON** (output from openapi_parser.py)
+**Example:** If user selected `["Config", "Connection", "DAG"]`, create 3 tasks:
 
-3. **Build the command** to invoke skill_generator.py:
-   ```bash
-   python3 swagger2skill/scripts/skill_generator.py \
-     <skill-name> \
-     <output-dir> \
-     '<categories-json>' \
-     '<selected-categories-json>'
-   ```
+```python
+# Pseudocode - use TaskCreate tool
+for category in selected_categories:
+    TaskCreate(
+        subject=f"Generate CLI commands for {category} category",
+        activeForm=f"Generating {category} CLI commands",
+        description=f"""
+Generate Click CLI commands for the {category} category from OpenAPI spec.
 
-**Example:**
+Steps:
+1. Get category details: python3 swagger2skill/scripts/get_category_details.py <spec-url> {category}
+2. Parse the JSON output to understand all endpoints and parameters
+3. Write Click CLI command code for each endpoint with proper:
+   - Command names (kebab-case from operationId)
+   - Parameter decorators (@click.option, @click.argument)
+   - Type conversions (click.INT, click.FLOAT, click.BOOL)
+   - Help text from descriptions
+   - API request construction
+4. Output the complete Click command group code
+"""
+    )
+```
+
+#### 5.2 Execute Tasks in Parallel
+
+For each task, follow this workflow:
+
+**Step 1: Get Category Details**
+
 ```bash
-python3 swagger2skill/scripts/skill_generator.py \
-  airflow-api \
-  /Users/ppsteven/Projects/skills \
-  '{"Config":[...],"Connection":[...],...}' \
-  '["Config","Connection","DAG"]'
+python3 swagger2skill/scripts/get_category_details.py <openapi-url-or-file> <category-name>
 ```
 
-**Execute the command** and monitor the output.
-
-**Expected Output:**
+**Example Output:**
+```json
+{
+  "category_name": "Config",
+  "endpoint_count": 3,
+  "endpoints": [
+    {
+      "path": "/config",
+      "method": "GET",
+      "summary": "Get configuration",
+      "operationId": "getConfig",
+      "description": "Retrieve system configuration",
+      "parameters": [
+        {
+          "name": "format",
+          "in": "query",
+          "required": false,
+          "description": "Output format",
+          "schema": {"type": "string"}
+        }
+      ],
+      "requestBody": null,
+      "responses": {...}
+    },
+    ...
+  ]
+}
 ```
-  ✓ Created SKILL.md
-  ✓ Created scripts/cli_tool.py
-  ✓ Created references/api_endpoints.md
-  ✓ Created references/unsupported_categories.md
 
-✅ Skill generated at: /Users/ppsteven/Projects/skills/airflow-api
+**Step 2: Generate Click Commands with AI**
 
-📁 Structure:
-   airflow-api/
-   ├── SKILL.md
-   ├── scripts/
-   │   └── cli_tool.py
-   └── references/
-       ├── api_endpoints.md
-       └── unsupported_categories.md
+**CRITICAL:** Use Claude Code (yourself) to write the Click CLI code. Do NOT use scripts.
+
+For each endpoint in the category details:
+
+1. **Analyze the endpoint:**
+   - What is the HTTP method? (GET, POST, DELETE, etc.)
+   - What is the path? (e.g., `/config`, `/users/{userId}`)
+   - What parameters does it need?
+     - Path parameters → `@click.argument()`
+     - Query parameters → `@click.option()`
+     - Request body → handle separately
+   - What types do parameters use? (string, integer, boolean, etc.)
+
+2. **Write the Click command:**
+   ```python
+   @config_group.command('get-config')
+   @click.option('--format', type=click.STRING, help='Output format')
+   def config_get_config(format):
+       """Retrieve system configuration"""
+       params = {
+           'format': format,
+       }
+       result = api.request(
+           method='GET',
+           endpoint='/config',
+           params=params if params else None,
+       )
+
+       if 'error' not in result:
+           click.echo(json.dumps(result, indent=2, ensure_ascii=False))
+       else:
+           click.echo(result['error'], err=True)
+   ```
+
+3. **Repeat for all endpoints in the category**
+
+4. **Create the category group wrapper:**
+   ```python
+   @cli.group(name='config')
+   def config_group():
+       """Manage Config operations"""
+       pass
+
+   # ... all commands follow here
+   ```
+
+**Step 3: Store Generated Code**
+
+Save the complete category code block for later assembly.
+
+**Expected Output Format:**
+```python
+# Category: Config
+# Endpoint count: 3
+
+@cli.group(name='config')
+def config_group():
+    """Manage Config operations"""
+    pass
+
+@config_group.command('get-config')
+@click.option('--format', type=click.STRING, help='Output format')
+def config_get_config(format):
+    """Retrieve system configuration"""
+    # ... implementation
+
+@config_group.command('update-config')
+@click.option('--key', required=True, help='Configuration key')
+@click.option('--value', required=True, help='Configuration value')
+def config_update_config(key, value):
+    """Update configuration setting"""
+    # ... implementation
+
+# ... more commands
+```
+
+#### 5.3 Assemble Final CLI Tool
+
+Once all tasks are complete, assemble the final `cli_tool.py`:
+
+**Template Structure:**
+```python
+#!/usr/bin/env python3
+"""
+CLI Tool - {skill_name}
+
+Auto-generated CLI tool for managing APIs.
+"""
+
+import click
+import json
+import requests
+from urllib.parse import urljoin
+from typing import Optional
+import os
+
+
+class API:
+    """API client."""
+
+    def __init__(self, base_url: str = None, token: str = None):
+        """Initialize API client."""
+        self.base_url = base_url or os.getenv('API_BASE_URL', 'http://localhost:8080')
+        self.token = token or os.getenv('API_TOKEN', '')
+        self.headers = {
+            'Content-Type': 'application/json',
+        }
+        if self.token:
+            self.headers['Authorization'] = f'Bearer {self.token}'
+
+    def request(self, method: str, endpoint: str, **kwargs) -> dict:
+        """Make API request."""
+        url = urljoin(self.base_url, endpoint)
+        try:
+            response = requests.request(method, url, headers=self.headers, **kwargs, timeout=30)
+            response.raise_for_status()
+            return response.json() if response.text else {"status": "success"}
+        except Exception as e:
+            click.echo(f"❌ Error: {e}", err=True)
+            return {"error": str(e)}
+
+
+# Initialize API client
+api = API()
+
+
+@click.group()
+def cli():
+    """API CLI Tool"""
+    pass
+
+
+# ============================================================
+# GENERATED COMMANDS - INSERT ALL CATEGORY CODE BLOCKS HERE
+# ============================================================
+
+{category_1_code}
+
+{category_2_code}
+
+{category_3_code}
+
+# ============================================================
+
+
+if __name__ == '__main__':
+    cli()
+```
+
+**Assembly Process:**
+1. Insert all generated category code blocks
+2. Write to `<output-dir>/<skill-name>/scripts/cli_tool.py`
+3. Set executable permissions: `chmod +x cli_tool.py`
+
+#### 5.4 Generate Supporting Files
+
+Create the remaining skill files:
+
+**1. SKILL.md**
+
+```markdown
+---
+name: {skill_name}
+description: Manage {categories} via API
+---
+
+# {Skill Title}
+
+Interact with APIs for {categories}.
+
+## Capabilities
+
+This skill provides CLI tools to manage:
+
+{list_of_categories_with_counts}
+
+## Usage
+
+\`\`\`bash
+python scripts/cli_tool.py --help
+python scripts/cli_tool.py <category> --help
+python scripts/cli_tool.py <category> <command> --param value
+\`\`\`
+
+...
+```
+
+**2. references/api_endpoints.md**
+
+Document all selected endpoints with details from OpenAPI spec.
+
+**3. references/unsupported_categories.md** (if applicable)
+
+List categories that were NOT included in the skill.
+
+**Expected Final Structure:**
+```
+<skill-name>/
+├── SKILL.md
+├── scripts/
+│   └── cli_tool.py
+└── references/
+    ├── api_endpoints.md
+    └── unsupported_categories.md (optional)
 ```
 
 ---
@@ -400,10 +628,10 @@ If generation fails:
 
 All Python scripts are in the `swagger2skill/scripts/` directory:
 
-- **swagger2skill.py** - Main script: extracts and displays categories
-- **openapi_parser.py** - Parser: extracts full category/endpoint details
-- **skill_generator.py** - Generator: creates skill files and CLI tool
-- **cli_command_generator.py** - (Future use) Single-category CLI generator for parallel processing
+- **swagger2skill.py** - Main script: extracts and displays categories with `--json` option for programmatic use
+- **openapi_parser.py** - Parser: extracts full category/endpoint details from OpenAPI specs
+- **get_category_details.py** - Detail extractor: gets complete endpoint information for a single category (used in parallel task generation)
+- **skill_generator.py** - (Legacy) Automated generator - DO NOT USE for new workflows; use AI-driven generation in Step 5 instead
 
 ---
 
@@ -441,26 +669,36 @@ python3 <skill-name>/scripts/cli_tool.py config get-config --help
 
 ---
 
-## Future Enhancements (Not Yet Implemented)
+## Implementation Status
 
-⚠️ The following features are planned but **not yet implemented**:
+✅ **Implemented Features:**
 
-- **Parallel CLI generation** using tasks + subagents (see goal.md 步骤 5)
+- **Interactive category selection** via AskUserQuestion (Step 2, Step 3)
+- **Multi-select support** for custom category choices
+- **AI-driven parallel CLI generation** using tasks and Claude Code intelligence (Step 5)
+- **Complete OpenAPI detail extraction** via get_category_details.py
+- **JSON output mode** for programmatic parsing (`--json` flag)
+
+⚠️ **Future Enhancements:**
+
 - **Automatic skill validation** using skill-creator skill (see goal.md 步骤 6)
-- **CLI command generator agents** for each category (cli_command_generator.py exists but not integrated)
-
-These will be implemented in Phase 2 after AskUserQuestion integration is complete and tested.
+- **Enhanced error recovery** for malformed OpenAPI specs
+- **Support for OpenAPI 3.1** and additional authentication schemes
 
 ---
 
 ## Summary
 
-This skill automates skill generation from OpenAPI specs with:
+This skill automates skill generation from OpenAPI specs with AI-powered intelligence:
 
-✅ **Interactive category selection** via AskUserQuestion
+✅ **Interactive category selection** via AskUserQuestion (Steps 2-4)
 ✅ **Multi-select support** for custom category choices
-✅ **Automatic CLI generation** with Click commands for each endpoint
-✅ **Complete documentation** including API references
+✅ **AI-driven parallel CLI generation** - Claude Code writes high-quality code for each category (Step 5)
+✅ **Complete OpenAPI parsing** with full parameter and type information
+✅ **Task-based parallelization** for efficient multi-category processing
+✅ **Complete documentation** including API references and usage guides
 ✅ **Verification and testing** of generated skills
+
+**Key Advantage:** Uses Claude Code's intelligence to generate contextual, high-quality CLI commands instead of rigid template-based generation.
 
 Follow the 6-step workflow exactly as documented to ensure proper skill generation.
