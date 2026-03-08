@@ -49,4 +49,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Repository**: https://github.com/PPsteven/skills
 - **Issues**: https://github.com/PPsteven/skills/issues
-- **Discussions**: https://github.com/PPsteven/skills/discussions
+- **Discussions**: https://github.com/PPsteven/skills/discussions 
