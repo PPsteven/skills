@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
+1.#!/usr/bin/env python3
 """
 Skill Generator - Generate skill directory structure and files
 
 Creates a complete skill from parsed OpenAPI data, including SKILL.md,
-CLI tools, and reference documentation.
+CLI tools, and reference documentation with full endpoint implementations.
 """
 
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 
@@ -186,45 +186,235 @@ if __name__ == '__main__':
         print(f"  ✓ Created scripts/cli_tool.py")
 
 
+    def _endpoint_to_command_name(self, operation_id: str) -> str:
+        """
+        Convert operationId to kebab-case command name.
+
+        Args:
+            operation_id: Operation ID from OpenAPI spec
+
+        Returns:
+            kebab-case command name
+        """
+        if not operation_id:
+            return 'command'
+
+        # Convert camelCase to kebab-case
+        # Insert hyphen before uppercase letters that follow lowercase
+        name = re.sub('([a-z])([A-Z])', r'\1-\2', operation_id)
+        return name.lower()
+
+    def _get_parameter_type(self, schema: Dict[str, Any]) -> str:
+        """
+        Convert OpenAPI schema type to Click type.
+
+        Args:
+            schema: Parameter schema definition
+
+        Returns:
+            Click-compatible type string
+        """
+        param_type = schema.get('type', 'string')
+
+        type_map = {
+            'string': 'str',
+            'integer': 'int',
+            'number': 'float',
+            'boolean': 'bool',
+            'array': 'str',
+        }
+
+        return type_map.get(param_type, 'str')
+
+    def _parameter_to_click_option(self, parameter: Dict[str, Any]) -> str:
+        """
+        Convert OpenAPI parameter to Click decorator.
+
+        Args:
+            parameter: Parameter definition with name, in, required, schema
+
+        Returns:
+            Click decorator string
+        """
+        name = parameter.get('name', 'param')
+        param_in = parameter.get('in', 'query')
+        required = parameter.get('required', False)
+        description = parameter.get('description', f'{name} parameter')
+        schema = parameter.get('schema', {})
+        param_type = self._get_parameter_type(schema)
+
+        # Format parameter name for Click
+        if param_in == 'path':
+            # Path parameters become arguments
+            return f"@click.argument('{name}')"
+        else:
+            # Query, header, cookie parameters become options
+            option_name = f"--{name.replace('_', '-')}"
+            decorator = f"@click.option('{option_name}'"
+
+            # Add type if not string
+            if param_type != 'str':
+                # Convert to Click type constants (all caps)
+                type_map = {
+                    'int': 'click.INT',
+                    'float': 'click.FLOAT',
+                    'bool': 'click.BOOL',
+                }
+                click_type = type_map.get(param_type, 'click.STRING')
+                decorator += f", type={click_type}"
+
+            # Add required flag
+            if required:
+                decorator += ", required=True"
+
+            # Add help text
+            decorator += f", help='{description}'"
+            decorator += ")"
+
+            return decorator
+
+    def _generate_endpoint_implementation(self, endpoint: Dict[str, Any],
+                                         category_slug: str) -> str:
+        """
+        Generate a complete Click command for an endpoint.
+
+        Args:
+            endpoint: Endpoint definition with path, method, parameters
+            category_slug: Slugified category name
+
+        Returns:
+            Complete Click command function as string
+        """
+        operation_id = endpoint.get('operationId', '')
+        command_name = self._endpoint_to_command_name(operation_id)
+        path = endpoint.get('path', '')
+        method = endpoint.get('method', 'GET')
+        summary = endpoint.get('summary', f'{method} {path}')
+        description = endpoint.get('description', summary)
+        parameters = endpoint.get('parameters', [])
+
+        # Handle both old format (count as int) and new format (list of dicts)
+        if isinstance(parameters, int):
+            # Old format - parameters count, no details available
+            parameters = []
+        elif not isinstance(parameters, list):
+            parameters = []
+
+        # Separate path and query parameters
+        path_params = [p for p in parameters if isinstance(p, dict) and p.get('in') == 'path']
+        query_params = [p for p in parameters if isinstance(p, dict) and p.get('in') != 'path']
+
+        # Build function signature with parameters
+        func_params = [p.get('name') for p in parameters]
+        func_signature = ', '.join(func_params) if func_params else ''
+        if func_signature:
+            func_signature = ', ' + func_signature
+
+        # Build parameter decorators
+        param_decorators = []
+        for param in parameters:
+            param_decorators.append(self._parameter_to_click_option(param))
+
+        decorators = '\n'.join(param_decorators) if param_decorators else ''
+
+        # Build query params dict for api.request
+        query_params_code = ''
+        if query_params:
+            query_params_code = 'params = {\n'
+            for param in query_params:
+                pname = param.get('name')
+                query_params_code += f"        '{pname}': {pname},\n"
+            query_params_code += '    }'
+        else:
+            query_params_code = 'params = {}'
+
+        # Build path with parameter interpolation
+        # For path parameters, we'll use f-string to interpolate them in the generated code
+        # But we need to avoid double escaping when generating the string itself
+        formatted_path = path
+        for param in path_params:
+            pname = param.get('name')
+            # Keep the path as-is for now; we'll use f-string in the generated code
+
+        # Build endpoint line to be inserted into the generated function
+        # Use format() style for the endpoint so parameters can be interpolated
+        if path_params:
+            # Create format string: /users/{userId} becomes /users/{{userId}} in triple-quoted string
+            endpoint_line = f"endpoint='{formatted_path}',"
+        else:
+            endpoint_line = f"endpoint='{formatted_path}',"
+
+        # Generate the command function
+        if decorators:
+            command_code = f'''
+@{category_slug}_group.command('{command_name}')
+{decorators}
+def {category_slug}_{command_name.replace('-', '_')}({func_signature.lstrip(', ')}):
+    """{description}"""
+    {query_params_code}
+    result = api.request(
+        method='{method}',
+        {endpoint_line}
+        params=params if params else None,
+    )
+
+    if 'error' not in result:
+        click.echo(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        click.echo(result['error'], err=True)
+'''
+        else:
+            command_code = f'''
+@{category_slug}_group.command('{command_name}')
+def {category_slug}_{command_name.replace('-', '_')}():
+    """{description}"""
+    result = api.request(
+        method='{method}',
+        endpoint='{path}',
+    )
+
+    if 'error' not in result:
+        click.echo(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        click.echo(result['error'], err=True)
+'''
+
+        return command_code
+
     def _generate_cli_commands(self) -> str:
-        """Generate Click CLI command stubs for each category."""
+        """Generate Click CLI commands for each endpoint in each category."""
         commands = []
 
         for category in self.selected_categories:
+            category_slug = self._slugify(category)
+            endpoints = self.categories.get(category, [])
+
             # Create category group
             commands.append(f'''
-@cli.group(name='{self._slugify(category)}')
-def {self._slugify(category)}_group():
+@cli.group(name='{category_slug}')
+def {category_slug}_group():
     """Manage {category} operations"""
     pass
+''')
 
-
-@{self._slugify(category)}_group.command('list')
-@click.option('--limit', default=10, help='Number of items to return')
-def {self._slugify(category)}_list(limit):
+            # Generate command for each endpoint
+            if endpoints:
+                for endpoint in endpoints:
+                    cmd = self._generate_endpoint_implementation(endpoint, category_slug)
+                    commands.append(cmd)
+            else:
+                # Fallback if no endpoints found
+                commands.append(f'''
+@{category_slug}_group.command('list')
+def {category_slug}_list():
     """List {category} items"""
-    # TODO: Implement {category} list endpoint
-    slug = '{self._slugify(category)}'
-    click.echo(f"Fetching {category} items (limit={{limit}})...")
-    # result = api.request('GET', f'/api/v1/{{slug}}?limit={{limit}}')
-    # click.echo(json.dumps(result, indent=2))
-
-
-@{self._slugify(category)}_group.command('detail')
-@click.argument('item_id')
-def {self._slugify(category)}_detail(item_id):
-    """Get {category} details"""
-    # TODO: Implement {category} detail endpoint
-    slug = '{self._slugify(category)}'
-    click.echo(f"Fetching {category} details for {{item_id}}...")
-    # result = api.request('GET', f'/api/v1/{{slug}}/{{item_id}}')
-    # click.echo(json.dumps(result, indent=2))
+    click.echo("No endpoints found for {category}")
 ''')
 
         return '\n'.join(commands)
 
     def _generate_endpoints_reference(self):
-        """Generate API endpoints reference documentation."""
+        """Generate API endpoints reference documentation with full parameter details."""
         doc = "# API Endpoints Reference\n\n"
         doc += f"**Selected Categories**: {', '.join(self.selected_categories)}\n\n"
 
@@ -241,7 +431,31 @@ def {self._slugify(category)}_detail(item_id):
                 doc += f"- **Method**: `{endpoint['method']}`\n"
                 doc += f"- **Path**: `{endpoint['path']}`\n"
                 doc += f"- **Operation ID**: `{endpoint.get('operationId', 'N/A')}`\n"
-                doc += f"- **Parameters**: {endpoint.get('parameters', 0)} parameters\n\n"
+
+                # Include detailed parameter information
+                parameters = endpoint.get('parameters', [])
+                if isinstance(parameters, list) and parameters:
+                    doc += f"- **Parameters**: {len(parameters)} parameters\n"
+                    for param in parameters:
+                        # Handle both old format (count) and new format (list)
+                        if isinstance(param, dict):
+                            pname = param.get('name', 'unknown')
+                            pin = param.get('in', 'query')
+                            required = param.get('required', False)
+                            schema = param.get('schema', {})
+                            ptype = schema.get('type', 'string')
+                            pdesc = param.get('description', '')
+
+                            required_tag = "✓ required" if required else "optional"
+                            doc += f"  - `{pname}` ({pin}, {ptype}) - {required_tag}"
+                            if pdesc:
+                                doc += f" - {pdesc}"
+                            doc += "\n"
+                else:
+                    # Old format: parameters is a count
+                    doc += f"- **Parameters**: {parameters} parameters\n"
+
+                doc += "\n"
 
         filepath = self.skill_dir / 'references' / 'api_endpoints.md'
         filepath.write_text(doc)
@@ -284,14 +498,25 @@ def {self._slugify(category)}_detail(item_id):
         return '\n'.join(items)
 
     def _generate_cli_examples(self) -> str:
-        """Generate CLI usage examples."""
+        """Generate CLI usage examples with actual endpoints."""
         examples = []
         for category in self.selected_categories:
             slug = self._slugify(category)
-            examples.append(f"# {category}")
+            endpoints = self.categories.get(category, [])
+            examples.append(f"### {category}")
             examples.append(f"```bash")
-            examples.append(f"python scripts/cli_tool.py {slug} list")
-            examples.append(f"python scripts/cli_tool.py {slug} detail <id>")
+
+            # Show first 2-3 endpoint examples
+            for endpoint in endpoints[:3]:
+                method = endpoint.get('method', 'GET')
+                operation_id = endpoint.get('operationId', '')
+                if operation_id:
+                    cmd_name = self._endpoint_to_command_name(operation_id)
+                    examples.append(f"python scripts/cli_tool.py {slug} {cmd_name}")
+
+            if len(endpoints) > 3:
+                examples.append(f"# ... and {len(endpoints) - 3} more commands")
+
             examples.append(f"```")
             examples.append("")
 

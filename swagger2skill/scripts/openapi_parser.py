@@ -28,6 +28,7 @@ class OpenAPIParser:
         self.version = None
         self.spec_source = spec_source
         self.categories = {}
+        self._full_categories = {}  # Store complete endpoint definitions with full parameters
 
     def load_spec(self) -> bool:
         """
@@ -73,6 +74,7 @@ class OpenAPIParser:
             return {}
 
         self.categories = {}
+        self._full_categories = {}
 
         if self.version == 'OpenAPI 3.0':
             self._extract_openapi3_categories()
@@ -97,11 +99,27 @@ class OpenAPIParser:
                 summary = operation.get('summary', f'{method.upper()} {path}')
                 operation_id = operation.get('operationId', '')
                 parameters = operation.get('parameters', [])
+                request_body = operation.get('requestBody', None)
+                responses = operation.get('responses', {})
+
+                # Extract full parameter information
+                full_parameters = []
+                for param in parameters:
+                    full_param = {
+                        'name': param.get('name', ''),
+                        'in': param.get('in', 'query'),
+                        'required': param.get('required', False),
+                        'description': param.get('description', ''),
+                        'schema': param.get('schema', {}),
+                    }
+                    full_parameters.append(full_param)
 
                 for tag in tags:
                     if tag not in self.categories:
                         self.categories[tag] = []
+                        self._full_categories[tag] = []
 
+                    # Brief endpoint info (backward compatible)
                     endpoint = {
                         'path': path,
                         'method': method.upper(),
@@ -111,6 +129,19 @@ class OpenAPIParser:
                         'description': operation.get('description', ''),
                     }
                     self.categories[tag].append(endpoint)
+
+                    # Full endpoint info with complete parameter details
+                    full_endpoint = {
+                        'path': path,
+                        'method': method.upper(),
+                        'summary': summary,
+                        'operationId': operation_id,
+                        'description': operation.get('description', ''),
+                        'parameters': full_parameters,
+                        'requestBody': request_body,
+                        'responses': responses,
+                    }
+                    self._full_categories[tag].append(full_endpoint)
 
     def _extract_swagger2_categories(self):
         """Extract categories from Swagger 2.0 specification."""
@@ -128,11 +159,33 @@ class OpenAPIParser:
                 summary = operation.get('summary', f'{method.upper()} {path}')
                 operation_id = operation.get('operationId', '')
                 parameters = operation.get('parameters', [])
+                responses = operation.get('responses', {})
+
+                # Extract full parameter information
+                full_parameters = []
+                request_body = None
+                for param in parameters:
+                    if param.get('in') == 'body':
+                        # In Swagger 2.0, body parameters become requestBody
+                        request_body = param.get('schema', {})
+                    else:
+                        full_param = {
+                            'name': param.get('name', ''),
+                            'in': param.get('in', 'query'),
+                            'required': param.get('required', False),
+                            'description': param.get('description', ''),
+                            'schema': {'type': param.get('type', 'string')},
+                        }
+                        if 'enum' in param:
+                            full_param['schema']['enum'] = param['enum']
+                        full_parameters.append(full_param)
 
                 for tag in tags:
                     if tag not in self.categories:
                         self.categories[tag] = []
+                        self._full_categories[tag] = []
 
+                    # Brief endpoint info (backward compatible)
                     endpoint = {
                         'path': path,
                         'method': method.upper(),
@@ -142,6 +195,19 @@ class OpenAPIParser:
                         'description': operation.get('description', ''),
                     }
                     self.categories[tag].append(endpoint)
+
+                    # Full endpoint info with complete parameter details
+                    full_endpoint = {
+                        'path': path,
+                        'method': method.upper(),
+                        'summary': summary,
+                        'operationId': operation_id,
+                        'description': operation.get('description', ''),
+                        'parameters': full_parameters,
+                        'requestBody': request_body,
+                        'responses': responses,
+                    }
+                    self._full_categories[tag].append(full_endpoint)
 
     def display_categories(self):
         """Display extracted categories with endpoint counts."""
@@ -185,6 +251,68 @@ class OpenAPIParser:
     def get_all_categories_list(self) -> List[str]:
         """Get sorted list of all category names."""
         return sorted(self.categories.keys())
+
+    def get_endpoint_full_definition(self, category: str, operation_id: str) -> Dict[str, Any]:
+        """
+        Get complete endpoint definition including full parameter details.
+
+        Args:
+            category: Category name
+            operation_id: Operation ID of the endpoint
+
+        Returns:
+            Complete endpoint definition dict, or empty dict if not found
+        """
+        if category not in self._full_categories:
+            return {}
+
+        for endpoint in self._full_categories[category]:
+            if endpoint.get('operationId') == operation_id:
+                return endpoint
+
+        return {}
+
+    def get_endpoint_parameters(self, category: str, operation_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all parameters for a specific endpoint.
+
+        Args:
+            category: Category name
+            operation_id: Operation ID of the endpoint
+
+        Returns:
+            List of parameter definitions with type, required status, position info
+        """
+        endpoint = self.get_endpoint_full_definition(category, operation_id)
+        return endpoint.get('parameters', [])
+
+    def get_endpoint_request_body(self, category: str, operation_id: str) -> Any:
+        """
+        Get request body definition for a specific endpoint.
+
+        Args:
+            category: Category name
+            operation_id: Operation ID of the endpoint
+
+        Returns:
+            Request body schema definition, or None if not present
+        """
+        endpoint = self.get_endpoint_full_definition(category, operation_id)
+        return endpoint.get('requestBody')
+
+    def get_endpoint_responses(self, category: str, operation_id: str) -> Dict[str, Any]:
+        """
+        Get response definitions for a specific endpoint.
+
+        Args:
+            category: Category name
+            operation_id: Operation ID of the endpoint
+
+        Returns:
+            Responses schema definitions
+        """
+        endpoint = self.get_endpoint_full_definition(category, operation_id)
+        return endpoint.get('responses', {})
 
 
 def main():
