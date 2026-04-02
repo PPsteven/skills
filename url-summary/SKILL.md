@@ -132,23 +132,27 @@ Follow the selected template to create a structured summary. Key principles:
 
 ### Step 6: Generate Filename
 
-Create filename using format: `YYYY-MM-DD-sanitized-title.md`
+Create filename using format: `YYYY-MM-DD-中文标题.md`
 
 **Steps**:
 1. Get current date in YYYY-MM-DD format
 2. Take article title and sanitize:
-   - Convert to lowercase
+   - **Preserve Chinese/Japanese/Korean characters as-is** — do NOT convert to pinyin or romanize
    - Replace spaces with hyphens
-   - Remove special characters except hyphens and underscores
-   - Limit to 50 characters
-3. Combine: `2026-03-04-how-to-build-llm-agents.md`
+   - Remove only filesystem-unsafe characters: `/ \ : * ? " < > |`
+   - Limit title portion to 30 characters
+3. Combine with date: `2026-03-04-白银锡碳酸锂交易策略分析.md`
+
+**For Chinese content**: Use Chinese title directly — produces readable filenames like `2026-03-04-白银锡碳酸锂交易策略分析.md`
+
+**For English content**: Convert to lowercase, replace spaces with hyphens: `2026-03-04-how-to-build-llm-agents.md`
 
 ### Step 7: Save to Knowledge Base
 
 Write the formatted summary to the knowledge base directory:
 
 ```
-<knowledge_base_path>/<YYYY-MM-DD-sanitized-title.md>
+<knowledge_base_path>/<YYYY-MM-DD-中文标题.md>
 ```
 
 Confirm with the user:
@@ -213,7 +217,7 @@ Action:
 6. Detect content type (general news article)
 7. Use default-template.md
 8. Generate summary with YAML frontmatter
-9. Save as: ~/Documents/obsidian/minions/00.工作区/02.技术研究/2026-03-04-article-title.md
+9. Save as: ~/Documents/obsidian/minions/00.工作区/02.技术研究/2026-03-04-文章中文标题.md
 ```
 
 **Example 2: Technical article**
