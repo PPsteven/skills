@@ -271,7 +271,85 @@ disable-model-invocation: false          # Optional: prevent auto-invocation
 ---
 ```
 
-**Key decision:** Set `context: fork` if the skill needs to call other skills or use the Task tool for parallel operations. Otherwise, leave unset for inline execution.
+### DAG Workflow Diagram Validation
+
+If a skill includes a DAG workflow (e.g., `references/dag-workflow.md` or similar), you **must** generate and validate a Mermaid flowchart.
+
+**When to validate:**
+- Skill has a `references/dag-*.md` file
+- Skill has a workflow file describing multi-step processes with dependencies
+- SKILL.md documents a routing/orchestration workflow
+
+**How to validate:**
+
+**Step 1: Detect DAG workflow**
+```bash
+# Check for DAG workflow files
+ls /Users/ppsteven/projects/skills/<skill-name>/references/dag-*.md 2>/dev/null
+
+# Or look for workflow patterns in SKILL.md
+grep -i "workflow\|step\|process\|dag" /Users/ppsteven/projects/skills/<skill-name>/SKILL.md
+```
+
+**Step 2: Parse and generate Mermaid diagram**
+
+Read the DAG workflow file and convert it to Mermaid flowchart syntax:
+
+```
+```mermaid
+flowchart TD
+    Start([开始]) --> Step1[步骤1]
+    Step1 --> Step2[步骤2]
+    Step2 --> Step3[步骤3]
+    Step3 --> End([结束])
+    
+    Step1 -->|条件| Step3
+    Step2 -->|并行| Step3
+```
+```
+
+**Step 3: Verify the diagram**
+
+- Check all nodes are connected (no orphan nodes)
+- Verify no circular dependencies (DAG = Directed Acyclic Graph)
+- Ensure all conditional branches are clearly labeled
+- Confirm start and end nodes are present
+
+**Step 4: Embed in SKILL.md or a separate diagram file**
+
+Add the Mermaid diagram to the workflow documentation:
+```markdown
+## 流程图
+
+```mermaid
+flowchart TD
+    Start([开始]) --> Step1[步骤1]
+    ...
+```
+```
+
+**Common DAG patterns:**
+
+| Pattern | Mermaid Syntax |
+|---------|----------------|
+| 线性流程 | `A --> B --> C` |
+| 条件分支 | `A -->|是| B` 和 `A -->|否| C` |
+| 并行执行 | `A --> B` 和 `A --> C` (B 和 C 并行) |
+| 汇聚等待 | `B --> D` 和 `C --> D` |
+| 循环 | 不允许（DAG 无环） |
+
+**Validation checklist:**
+- [ ] Start node exists (`Start([开始])` or `Start([Start])`)
+- [ ] End node exists (`End([结束])` or `End([End])`)
+- [ ] No node references undefined nodes
+- [ ] No cycles (run `grep -i "while\|loop\|cycle" dag.md` to check)
+- [ ] All conditional branches labeled (`-->|label|`)
+- [ ] Mermaid syntax is valid (no trailing commas, proper node IDs)
+
+**If the workflow is invalid:**
+1. Report the specific issue (orphan node, cycle, syntax error)
+2. Ask user if they want to fix the workflow or skip diagram validation
+3. Never skip validation without user consent
 
 ### Inline vs. Fork Context
 

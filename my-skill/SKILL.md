@@ -108,9 +108,10 @@ Follow the instructions in the loaded workflow file to complete the user's reque
 2. Invoke skill-creator skill for guidance
 3. Create skill directory structure
 4. Write SKILL.md with proper YAML frontmatter
-5. Create symlinks for Claude Code and Cline
-6. Verify deployment
-7. Commit and push to repository (with user confirmation)
+5. If skill has a DAG workflow, generate and validate Mermaid flowchart
+6. Create symlinks for Claude Code and Cline
+7. Verify deployment
+8. Commit and push to repository (with user confirmation)
 
 **Output**: New skill deployed at `/Users/ppsteven/projects/skills/<skill-name>` with symlinks
 
@@ -144,7 +145,7 @@ Use **my-skill** whenever you need to:
 ### Dependencies
 
 - **find**: Requires `clawhub` CLI or `npx skills` for searching
-- **create**: Requires `skill-creator` skill for guidance
+- **create**: Requires `skill-creator` skill for guidance; if skill has DAG workflow, generates Mermaid diagrams for validation
 - **manage**: No external dependencies
 
 ### Best Practices
