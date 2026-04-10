@@ -101,7 +101,20 @@ lark-cli wiki spaces nodes list --params '{"space_id":"<space_id>"}'
 
 **原因**：SSH 会话默认无法解锁 macOS keychain，lark-cli 读取凭证失败。
 
-**解决**：在执行 lark-cli 前先解锁 keychain：
+**替代方案一（推荐）**：使用设备授权登录，不依赖 keychain：
+
+```bash
+lark-cli auth login --no-wait --scope "search:docs:read"
+# 执行后会返回授权链接和设备码，在浏览器打开完成授权即可
+```
+
+设备授权完成后，后续 lark-cli 命令即可正常工作。如果需要其他 scope，可叠加指定：
+
+```bash
+lark-cli auth login --no-wait --scope "search:docs:read,wiki:readonly,docx:readonly"
+```
+
+**替代方案二**：在本地终端解锁 keychain 后再通过 SSH 使用（不适用于纯 SSH 环境）：
 
 ```bash
 security unlock-keychain ~/Library/Keychains/login.keychain-db
@@ -114,7 +127,7 @@ security unlock-keychain ~/Library/Keychains/login.keychain-db
 - **需求跨域**：例如"发消息并附上日程"→ 先 lark-calendar 查询日程，再 lark-im 发送消息
 - **权限报错**：遇到 Permission denied 时，路由到 **lark-shared** 处理权限问题
 - **无匹配 skill**：使用 **lark-openapi-explorer** 探索原生 API
-- **keychain 报错**：SSH 环境下先运行 `security unlock-keychain` 解锁后再重试
+- **keychain 报错**：SSH 环境下使用 `lark-cli auth login --no-wait --scope <needed_scope>` 设备授权，或切回本地终端解锁 keychain 后重试
 
 ## 快速参考：高频场景
 
